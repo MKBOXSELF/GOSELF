@@ -143,6 +143,51 @@
         .draw-zone-header { background: var(--primary-blue); color: white; padding: 12px 15px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .draw-zone-header h4 { margin: 0; font-size: 15px; display: flex; align-items: center; gap: 8px; flex: 1; }
         .draw-zone-content { padding: 15px; background: white; display: none; }
+        /* Stili per le modalità di disegno */
+        .draw-mode-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .draw-mode-btn {
+            flex: 1;
+            padding: 8px 5px;
+            background: var(--light-gray);
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--dark-gray);
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .draw-mode-btn i {
+            margin-right: 5px;
+        }
+        .draw-mode-btn.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+        .radius-control {
+            margin: 10px 0;
+            display: none;
+        }
+        .radius-control label {
+            font-size: 12px;
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .radius-slider {
+            width: 100%;
+        }
+        .radius-value {
+            font-weight: bold;
+            color: var(--primary-blue);
+        }
         .draw-zone-btn { width: 100%; padding: 10px; background: var(--accent-orange); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .draw-zone-btn.active { background: var(--success-green); animation: pulse-green 1.5s infinite; }
         .draw-zone-btn.secondary { background: var(--light-gray); color: var(--dark-gray); border: 1px solid var(--medium-gray); }
@@ -686,10 +731,26 @@
                 <div class="draw-zone-panel">
                     <div class="draw-zone-header" onclick="toggleDrawZone()"><h4><i class="fas fa-draw-polygon"></i> Disegna la Zona</h4><i class="fas fa-chevron-down" id="drawZoneArrow"></i></div>
                     <div class="draw-zone-content" id="drawZoneContent" style="display: none;">
+                        <!-- NUOVO: Selettore modalità di disegno -->
+                        <div class="draw-mode-group">
+                            <div class="draw-mode-btn" data-mode="polygon" onclick="setDrawingMode('polygon')"><i class="fas fa-draw-polygon"></i> Poligono</div>
+                            <div class="draw-mode-btn" data-mode="circle" onclick="setDrawingMode('circle')"><i class="fas fa-circle"></i> Cerchio</div>
+                            <div class="draw-mode-btn" data-mode="path" onclick="setDrawingMode('path')"><i class="fas fa-pencil-alt"></i> Mano libera</div>
+                        </div>
+                        <!-- Controllo raggio (solo per cerchio) -->
+                        <div class="radius-control" id="radiusControl">
+                            <label>Raggio: <span id="radiusValueLabel">5</span> km</label>
+                            <input type="range" id="radiusSlider" class="radius-slider" min="1" max="20" step="0.5" value="5">
+                        </div>
                         <button class="draw-zone-btn" id="startDrawBtn" onclick="startDrawingZone()"><i class="fas fa-pencil-alt"></i> Inizia a disegnare</button>
                         <button class="draw-zone-btn secondary" onclick="clearDrawnZone()"><i class="fas fa-trash-alt"></i> Cancella zona</button>
-                        <div class="zone-stats" id="zoneStats" style="display: none;"><div><span>Stazioni nella zona:</span><span class="stat-value" id="zoneStationsCount">0</span></div><div><span>Area approssimativa:</span><span class="stat-value" id="zoneArea">0 km²</span></div></div>
-                        <p style="font-size: 11px; color: #666; margin-top: 10px; text-align: center;"><i class="fas fa-info-circle"></i> Clicca sulla mappa per disegnare un poligono. Doppio clic per chiudere.</p>
+                        <div class="zone-stats" id="zoneStats" style="display: none;">
+                            <div><span>Stazioni nella zona:</span><span class="stat-value" id="zoneStationsCount">0</span></div>
+                            <div><span>Area approssimativa:</span><span class="stat-value" id="zoneArea">0 km²</span></div>
+                        </div>
+                        <p style="font-size: 11px; color: #666; margin-top: 10px; text-align: center;" id="drawInstructions">
+                            <i class="fas fa-info-circle"></i> Seleziona una modalità, poi clicca "Inizia a disegnare".
+                        </p>
                     </div>
                 </div>
                 <!-- PULSANTE SCARICA EXCEL RIMOSSO DA QUI E SPOSTATO NELLA CONFIGURAZIONE -->
@@ -1105,6 +1166,22 @@
         let trafficLayer = null;
         let isTrafficActive = false;
         
+        // ========== NUOVE VARIABILI PER LE MODALITÀ DI DISEGNO ZONA ==========
+        let drawingMode = 'polygon';   // 'polygon', 'circle', 'path'
+        let currentCircle = null;      // cerchio disegnato (L.circle)
+        let currentPath = null;         // polilinea disegnata (L.polyline) - non più utilizzata per path (ora freehand)
+        let pathPoints = [];             // punti del percorso (linea) - ora utilizzati per freehand
+        let tempPathPolyline = null;     // polilinea temporanea durante il disegno
+        let drawingActive = false;       // flag per sapere se siamo in fase di disegno attivo
+        let circleCenter = null;         // centro del cerchio
+        let currentRadiusKm = 5;          // raggio corrente (km)
+        
+        // Variabili specifiche per freehand (modalità path)
+        let freehandPoints = [];
+        let freehandTempLayer = null;
+        let isFreehandDrawing = false;
+        let freehandMouseDown = false;
+        
         const STORAGE_KEYS = {
             FAVORITES: 'fuelMapper_favorites',
             FAVORITE_MODE: 'fuelMapper_favoriteMode',
@@ -1301,6 +1378,24 @@
                     } 
                 });
             }
+            
+            // Inizializza controlli raggio
+            const radiusSlider = document.getElementById('radiusSlider');
+            const radiusLabel = document.getElementById('radiusValueLabel');
+            if (radiusSlider) {
+                radiusSlider.addEventListener('input', function() {
+                    currentRadiusKm = parseFloat(this.value);
+                    radiusLabel.innerText = currentRadiusKm.toFixed(1);
+                    if (zoneActive) {
+                        if (drawingMode === 'circle' && circleCenter) {
+                            updateCircleRadius();
+                        }
+                        // Per path (freehand) non c'è buffer, quindi niente.
+                        applyFilters();
+                    }
+                });
+            }
+            setDrawingMode('polygon');
         });
 
         // ==================== FUNZIONI PER I NUOVI MODAL ====================
@@ -1546,8 +1641,7 @@
                 map.addLayer(markerCluster);
                 highlightedMarkersLayer = L.layerGroup().addTo(map);
                 map.on('click', handleMapClickForNewStation);
-                map.on('click', handleMapClickForDrawing);
-                map.on('dblclick', handleMapDblClickForDrawing);
+                // Non più usato per path: map.on('click', handleMapClickForDrawing);
                 map.on('moveend', function() { if (filteredStations.length > 0) displayStations(); });
                 map.on('zoomend', function() { if (filteredStations.length > 0) displayStations(); });
                 console.log('Mappa inizializzata correttamente con layer: ' + activeLayerName);
@@ -2076,13 +2170,322 @@
 
         function toggleFavoriteMode() { favoriteModeActive = !favoriteModeActive; updateConfigModal(); applyFilters(); showToast(`Modalità preferiti ${favoriteModeActive ? 'attivata' : 'disattivata'}`, 'success'); }
 
-        function startDrawingZone() { if (isDrawing) { isDrawing = false; document.getElementById('startDrawBtn').classList.remove('active'); if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; } showToast('⏹️ Disegno annullato', 'success'); } else { isDrawing = true; tempPoints = []; document.getElementById('startDrawBtn').classList.add('active'); showToast('✏️ Clicca sulla mappa per disegnare il poligono. Doppio clic per chiudere.', 'success'); } }
-        function handleMapClickForDrawing(e) { if (!isDrawing) return; const latlng = e.latlng; tempPoints.push([latlng.lat, latlng.lng]); if (tempPolyline) map.removeLayer(tempPolyline); if (tempPoints.length > 1) tempPolyline = L.polyline(tempPoints, { color: '#FF6600', weight: 3, opacity: 0.8, dashArray: '5, 5' }).addTo(map); }
-        function handleMapDblClickForDrawing(e) { if (!isDrawing || tempPoints.length < 3) { if (isDrawing) showToast('⚠️ Servono almeno 3 punti per creare una zona', 'error'); return; } if (drawnPolygon) map.removeLayer(drawnPolygon); drawnPolygon = L.polygon(tempPoints, { color: '#0066B3', weight: 3, opacity: 0.8, fillColor: '#0066B3', fillOpacity: 0.2 }).addTo(map); if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; } isDrawing = false; zoneActive = true; document.getElementById('startDrawBtn').classList.remove('active'); updateZoneStats(); showToast('✅ Zona creata! I filtri ora considerano solo le stazioni in quest\'area', 'success'); applyFilters(); }
-        function clearDrawnZone() { if (drawnPolygon) { map.removeLayer(drawnPolygon); drawnPolygon = null; } if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; } isDrawing = false; zoneActive = false; tempPoints = []; document.getElementById('startDrawBtn').classList.remove('active'); document.getElementById('zoneStats').style.display = 'none'; showToast('🗑️ Zona cancellata', 'success'); applyFilters(); }
-        function updateZoneStats() { if (!drawnPolygon) return; const area = calculatePolygonArea(drawnPolygon.getLatLngs()[0]); document.getElementById('zoneArea').textContent = area.toFixed(2) + ' km²'; document.getElementById('zoneStats').style.display = 'block'; }
-        function calculatePolygonArea(points) { if (points.length < 3) return 0; let area = 0; const R = 6371; for (let i = 0; i < points.length; i++) { const j = (i + 1) % points.length; const p1 = points[i]; const p2 = points[j]; area += (p2.lng - p1.lng) * (2 + Math.sin(p1.lat * Math.PI / 180) + Math.sin(p2.lat * Math.PI / 180)); } return Math.abs(area * R * R / 2 * Math.PI / 180) / 100; }
-        function isPointInDrawnZone(lat, lng) { if (!zoneActive || !drawnPolygon) return true; try { return drawnPolygon.getBounds().contains([lat, lng]); } catch (e) { return drawnPolygon.getBounds().contains([lat, lng]); } }
+        // ========== NUOVE FUNZIONI PER IL DISEGNO ZONA (POLIGONO, CERCHIO, MANO LIBERA) ==========
+        function setDrawingMode(mode) {
+            drawingMode = mode;
+            // Aggiorna UI pulsanti modalità
+            document.querySelectorAll('.draw-mode-btn').forEach(btn => {
+                if (btn.getAttribute('data-mode') === mode) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            // Mostra/nascondi controllo raggio in base alla modalità
+            const radiusControl = document.getElementById('radiusControl');
+            if (mode === 'circle') {
+                radiusControl.style.display = 'block';
+            } else {
+                radiusControl.style.display = 'none';
+            }
+            // Resetta eventuale disegno in corso
+            if (drawingActive) {
+                stopDrawing();
+            }
+            // Aggiorna istruzioni
+            const instructions = document.getElementById('drawInstructions');
+            if (mode === 'polygon') {
+                instructions.innerHTML = '<i class="fas fa-info-circle"></i> Poligono: clic per aggiungere punti, doppio clic per chiudere.';
+            } else if (mode === 'circle') {
+                instructions.innerHTML = '<i class="fas fa-info-circle"></i> Cerchio: clic per posizionare il centro, poi regola il raggio.';
+            } else if (mode === 'path') {
+                instructions.innerHTML = '<i class="fas fa-pencil-alt"></i> Mano libera: tieni premuto il mouse e disegna l\'area. Rilascia per completare.';
+            }
+        }
+
+        function startDrawingZone() {
+            if (drawingActive) {
+                stopDrawing();
+                return;
+            }
+            clearDrawnZone();
+            drawingActive = true;
+            const startBtn = document.getElementById('startDrawBtn');
+            startBtn.innerHTML = '<i class="fas fa-stop"></i> Interrompi disegno';
+            startBtn.classList.add('active');
+            
+            if (drawingMode === 'polygon') {
+                tempPoints = [];
+                if (tempPolyline) map.removeLayer(tempPolyline);
+                tempPolyline = null;
+                showToast('✏️ Poligono: clicca sulla mappa per aggiungere vertici. Doppio clic per chiudere.', 'success');
+                map.on('click', handleMapClickForDrawing);
+                map.on('dblclick', handleMapDblClickForDrawing);
+            } else if (drawingMode === 'circle') {
+                showToast('🔘 Cerchio: clicca sulla mappa per posizionare il centro.', 'success');
+                map.on('click', handleMapClickForDrawing);
+            } else if (drawingMode === 'path') {
+                // Avvia disegno a mano libera
+                freehandPoints = [];
+                isFreehandDrawing = true;
+                map.dragging.disable();
+                showToast('✏️ Tieni premuto il mouse e disegna l\'area. Rilascia per completare.', 'success');
+                // Aggiungi listener per mouse/touch sulla mappa
+                map.on('mousedown', startFreehand);
+                map.on('mousemove', freehandMove);
+                map.on('mouseup', endFreehand);
+                map.on('touchstart', startFreehand);
+                map.on('touchmove', freehandMove);
+                map.on('touchend', endFreehand);
+            }
+        }
+
+        function stopDrawing() {
+            drawingActive = false;
+            const startBtn = document.getElementById('startDrawBtn');
+            startBtn.innerHTML = '<i class="fas fa-pencil-alt"></i> Inizia a disegnare';
+            startBtn.classList.remove('active');
+            
+            // Rimuovi listener specifici per modalità
+            map.off('click', handleMapClickForDrawing);
+            map.off('dblclick', handleMapDblClickForDrawing);
+            map.off('mousedown', startFreehand);
+            map.off('mousemove', freehandMove);
+            map.off('mouseup', endFreehand);
+            map.off('touchstart', startFreehand);
+            map.off('touchmove', freehandMove);
+            map.off('touchend', endFreehand);
+            
+            // Rimuovi layer temporanei
+            if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
+            if (freehandTempLayer) { map.removeLayer(freehandTempLayer); freehandTempLayer = null; }
+            tempPoints = [];
+            freehandPoints = [];
+            isFreehandDrawing = false;
+            map.dragging.enable();
+        }
+
+        // Gestori per freehand
+        function startFreehand(e) {
+            if (!drawingActive || drawingMode !== 'path') return;
+            L.DomEvent.preventDefault(e);
+            freehandMouseDown = true;
+            freehandPoints = [];
+            if (freehandTempLayer) map.removeLayer(freehandTempLayer);
+            freehandTempLayer = L.polyline([], { color: '#FF6600', weight: 3, opacity: 0.8 }).addTo(map);
+            const latlng = e.latlng || (e.touches ? map.mouseEventToLatLng(e.touches[0]) : null);
+            if (latlng) {
+                freehandPoints.push([latlng.lat, latlng.lng]);
+                freehandTempLayer.setLatLngs(freehandPoints);
+            }
+        }
+
+        function freehandMove(e) {
+            if (!freehandMouseDown || !drawingActive || drawingMode !== 'path') return;
+            L.DomEvent.preventDefault(e);
+            const latlng = e.latlng || (e.touches ? map.mouseEventToLatLng(e.touches[0]) : null);
+            if (latlng) {
+                freehandPoints.push([latlng.lat, latlng.lng]);
+                freehandTempLayer.setLatLngs(freehandPoints);
+            }
+        }
+
+        function endFreehand(e) {
+            if (!freehandMouseDown || !drawingActive || drawingMode !== 'path') return;
+            L.DomEvent.preventDefault(e);
+            freehandMouseDown = false;
+            
+            if (freehandPoints.length < 3) {
+                showToast('⚠️ Disegna un\'area più grande (almeno 3 punti)', 'error');
+                if (freehandTempLayer) map.removeLayer(freehandTempLayer);
+                freehandTempLayer = null;
+                freehandPoints = [];
+                return;
+            }
+            
+            // Chiudi il poligono (assicura che primo e ultimo punto coincidano)
+            const first = freehandPoints[0];
+            const last = freehandPoints[freehandPoints.length-1];
+            if (first[0] !== last[0] || first[1] !== last[1]) {
+                freehandPoints.push([first[0], first[1]]);
+            }
+            
+            // Crea poligono
+            if (drawnPolygon) map.removeLayer(drawnPolygon);
+            drawnPolygon = L.polygon(freehandPoints, {
+                color: '#0066B3',
+                weight: 3,
+                opacity: 0.8,
+                fillColor: '#0066B3',
+                fillOpacity: 0.2
+            }).addTo(map);
+            
+            if (freehandTempLayer) map.removeLayer(freehandTempLayer);
+            freehandTempLayer = null;
+            
+            zoneActive = true;
+            drawingActive = false;
+            stopDrawing(); // rimuove listener e riabilita dragging
+            updateZoneStats();
+            applyFilters();
+            showToast('✅ Area disegnata e chiusa automaticamente!', 'success');
+        }
+
+        function handleMapClickForDrawing(e) {
+            if (!drawingActive) return;
+            const latlng = e.latlng;
+            if (drawingMode === 'polygon') {
+                tempPoints.push([latlng.lat, latlng.lng]);
+                if (tempPolyline) map.removeLayer(tempPolyline);
+                if (tempPoints.length > 1) {
+                    tempPolyline = L.polyline(tempPoints, { color: '#FF6600', weight: 3, opacity: 0.8, dashArray: '5, 5' }).addTo(map);
+                }
+            } else if (drawingMode === 'circle') {
+                if (circleCenter) {
+                    if (currentCircle) map.removeLayer(currentCircle);
+                }
+                circleCenter = latlng;
+                currentRadiusKm = parseFloat(document.getElementById('radiusSlider').value);
+                const radiusMeters = currentRadiusKm * 1000;
+                currentCircle = L.circle([circleCenter.lat, circleCenter.lng], {
+                    radius: radiusMeters,
+                    color: '#0066B3',
+                    weight: 3,
+                    opacity: 0.8,
+                    fillColor: '#0066B3',
+                    fillOpacity: 0.2
+                }).addTo(map);
+                zoneActive = true;
+                drawnPolygon = currentCircle;
+                drawingActive = false;
+                stopDrawing();
+                updateZoneStats();
+                applyFilters();
+                showToast(`✅ Cerchio creato con raggio ${currentRadiusKm} km. Usa lo slider per modificarlo.`, 'success');
+            }
+        }
+
+        function handleMapDblClickForDrawing(e) {
+            if (!drawingActive || drawingMode !== 'polygon') return;
+            if (tempPoints.length < 3) {
+                showToast('⚠️ Servono almeno 3 punti per creare un poligono', 'error');
+                stopDrawing();
+                return;
+            }
+            const polygonPoints = tempPoints.map(p => [p[0], p[1]]);
+            if (drawnPolygon) map.removeLayer(drawnPolygon);
+            drawnPolygon = L.polygon(polygonPoints, { color: '#0066B3', weight: 3, opacity: 0.8, fillColor: '#0066B3', fillOpacity: 0.2 }).addTo(map);
+            if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
+            zoneActive = true;
+            drawingActive = false;
+            stopDrawing();
+            updateZoneStats();
+            applyFilters();
+            showToast('✅ Poligono creato!', 'success');
+        }
+
+        function updateCircleRadius() {
+            if (!zoneActive || drawingMode !== 'circle' || !circleCenter) return;
+            if (currentCircle) {
+                const newRadiusMeters = currentRadiusKm * 1000;
+                currentCircle.setRadius(newRadiusMeters);
+                showToast(`Raggio aggiornato a ${currentRadiusKm} km`, 'success');
+                updateZoneStats();
+                applyFilters();
+            }
+        }
+
+        function clearDrawnZone() {
+            if (drawnPolygon) {
+                map.removeLayer(drawnPolygon);
+                drawnPolygon = null;
+            }
+            if (currentCircle) {
+                map.removeLayer(currentCircle);
+                currentCircle = null;
+            }
+            if (currentPath) {
+                map.removeLayer(currentPath);
+                currentPath = null;
+            }
+            if (tempPolyline) {
+                map.removeLayer(tempPolyline);
+                tempPolyline = null;
+            }
+            if (freehandTempLayer) {
+                map.removeLayer(freehandTempLayer);
+                freehandTempLayer = null;
+            }
+            isDrawing = false;
+            zoneActive = false;
+            drawingActive = false;
+            tempPoints = [];
+            freehandPoints = [];
+            circleCenter = null;
+            document.getElementById('startDrawBtn').classList.remove('active');
+            document.getElementById('zoneStats').style.display = 'none';
+            showToast('🗑️ Zona cancellata', 'success');
+            applyFilters();
+        }
+
+        function updateZoneStats() {
+            if (!zoneActive) return;
+            let stationCount = 0;
+            if ((drawingMode === 'polygon' || drawingMode === 'path') && drawnPolygon && drawnPolygon instanceof L.Polygon) {
+                stationCount = stations.filter(s => isPointInDrawnZone(s.lat, s.lng)).length;
+                const area = calculatePolygonArea(drawnPolygon.getLatLngs()[0]);
+                document.getElementById('zoneArea').textContent = area.toFixed(2) + ' km²';
+            } else if (drawingMode === 'circle' && currentCircle) {
+                stationCount = stations.filter(s => isPointInDrawnZone(s.lat, s.lng)).length;
+                document.getElementById('zoneArea').textContent = 'Area: ' + (Math.PI * currentRadiusKm * currentRadiusKm).toFixed(2) + ' km²';
+            } else {
+                document.getElementById('zoneArea').textContent = '0 km²';
+            }
+            document.getElementById('zoneStationsCount').textContent = stationCount;
+            document.getElementById('zoneStats').style.display = 'block';
+        }
+
+        function isPointInDrawnZone(lat, lng) {
+            if (!zoneActive) return true;
+            if ((drawingMode === 'polygon' || drawingMode === 'path') && drawnPolygon && drawnPolygon instanceof L.Polygon) {
+                try {
+                    // Per freehand abbiamo un L.Polygon, stesso controllo
+                    return drawnPolygon.getBounds().contains([lat, lng]) && pointInPolygon([lng, lat], drawnPolygon.getLatLngs()[0]);
+                } catch(e) {
+                    return drawnPolygon.getBounds().contains([lat, lng]);
+                }
+            } else if (drawingMode === 'circle' && currentCircle) {
+                const center = currentCircle.getLatLng();
+                const distance = calculateDistance({lat: center.lat, lng: center.lng}, {lat, lng});
+                return distance <= currentRadiusKm;
+            }
+            return true;
+        }
+
+        // Funzione pointInPolygon (ray casting)
+        function pointInPolygon(point, vs) {
+            const x = point[0], y = point[1];
+            let inside = false;
+            for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+                const xi = vs[i].lng, yi = vs[i].lat;
+                const xj = vs[j].lng, yj = vs[j].lat;
+                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        function calculatePolygonArea(points) {
+            if (points.length < 3) return 0;
+            let area = 0;
+            const R = 6371;
+            for (let i = 0; i < points.length; i++) {
+                const j = (i + 1) % points.length;
+                const p1 = points[i];
+                const p2 = points[j];
+                area += (p2.lng - p1.lng) * (2 + Math.sin(p1.lat * Math.PI / 180) + Math.sin(p2.lat * Math.PI / 180));
+            }
+            return Math.abs(area * R * R / 2 * Math.PI / 180) / 100;
+        }
+
+        // Fine nuove funzioni zona
 
         function loadDataFromGoogleSheet() {
             showLoading();
@@ -2568,7 +2971,7 @@
         function applyFilters() {
             const minPrice = currentMinPrice;
             const maxPrice = currentMaxPrice;
-            const baseFiltered = stations.filter(s => { if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true; if (selectedBrands.size === 0) return false; if (!selectedBrands.has(s.brand)) return false; if (selectedFuels.size === 0) return false; if (!selectedFuels.has(s.fuelType)) return false; if (s.price < minPrice || s.price > maxPrice) return false; if (zoneActive && drawnPolygon && !isPointInDrawnZone(s.lat, s.lng)) return false; return true; });
+            const baseFiltered = stations.filter(s => { if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true; if (selectedBrands.size === 0) return false; if (!selectedBrands.has(s.brand)) return false; if (selectedFuels.size === 0) return false; if (!selectedFuels.has(s.fuelType)) return false; if (s.price < minPrice || s.price > maxPrice) return false; if (zoneActive && !isPointInDrawnZone(s.lat, s.lng)) return false; return true; });
             filteredStations = [];
             baseFiltered.forEach(station => {
                 const brandCardPrices = brandPrices[station.brand] || {};
