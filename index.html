@@ -876,7 +876,7 @@
                 </div>
                 <div class="modal-body">
                     <p><strong>Data di entrata in vigore:</strong> 01/04/2026</p>
-                    <p>La presente informativa descrive le modalità di trattamento dei dati personali degli utenti che consultano il sito <strong>MK_GO_FUEL_SELF</strong> (di seguito “il Sito”).</p>
+                    <p>La presente informativa descrive le modalità di trattamento dei dati personali degli utenti che consultano il sito <strong>MK_GO_FUEL_SELF(</strong> (di seguito “il Sito”).</p>
                     
                     <h4>1. Titolare del trattamento</h4>
                     <p>Il Titolare del trattamento è <strong>Spina Michele</strong>, contattabile all’indirizzo email: <a href="mailto:michelespinabox@gmail.com">michelespinabox@gmail.com</a>.</p>
@@ -2814,52 +2814,91 @@
             L.popup({ maxWidth: 320, minWidth: 280, className: 'custom-popup' }).setLatLng([station.lat, station.lng]).setContent(popupContent).openOn(map);
         }
         
+        // FUNZIONE CORRETTA: copia solo per i carburanti selezionati nei filtri
         function copyStationInfoByKey(stationKey) {
-            const station = stations.find(s => `${s.lat},${s.lng}` === stationKey);
-            if (!station) {
+            // Trova tutte le stazioni con le stesse coordinate (impianto unico)
+            const [lat, lng] = stationKey.split(',').map(Number);
+            const stationGroup = stations.filter(s => Math.abs(s.lat - lat) < 0.0001 && Math.abs(s.lng - lng) < 0.0001);
+            if (stationGroup.length === 0) {
                 showToast('❌ Stazione non trovata', 'error');
                 return;
             }
+            
+            // Filtra solo i carburanti selezionati
+            const fuelsOfInterest = stationGroup.filter(s => selectedFuels.has(s.fuelType));
+            if (fuelsOfInterest.length === 0) {
+                showToast('⚠️ Nessun carburante selezionato per questa stazione', 'error');
+                return;
+            }
+            
+            // Per ogni stazione valida, calcola le varianti di prezzo (originale + carte attive)
+            const variants = [];
             const minPrice = currentMinPrice;
             const maxPrice = currentMaxPrice;
-            const brandCardPrices = brandPrices[station.brand] || {};
-            const variants = [];
-            if (station.price >= minPrice && station.price <= maxPrice) {
-                variants.push({ name: 'Prezzo pompa', price: station.price, type: 'originale' });
-            }
-            Object.keys(brandCardPrices).forEach(card => {
-                const cardData = brandCardPrices[card];
-                if (cardData.active && cardData.value !== '' && !isNaN(cardData.value) && parseFloat(cardData.value) > 0) {
-                    let cardPrice;
-                    if (cardData.type === 'sconto') {
-                        cardPrice = station.price - parseFloat(cardData.value);
-                    } else {
-                        cardPrice = parseFloat(cardData.value);
-                    }
-                    if (cardPrice >= minPrice && cardPrice <= maxPrice) {
-                        let cardName = card;
-                        if (card === 'ALTRO' && cardData.customName) cardName = cardData.customName;
-                        variants.push({ name: cardName, price: cardPrice, type: 'carta' });
-                    }
+            
+            fuelsOfInterest.forEach(station => {
+                // Prezzo originale
+                if (station.price >= minPrice && station.price <= maxPrice) {
+                    variants.push({
+                        fuel: station.fuelType,
+                        name: 'Prezzo pompa',
+                        price: station.price,
+                        station: station
+                    });
                 }
+                
+                // Carte attive per questo brand
+                const brandCardPrices = brandPrices[station.brand] || {};
+                Object.keys(brandCardPrices).forEach(card => {
+                    const cardData = brandCardPrices[card];
+                    if (cardData.active && cardData.value !== '' && !isNaN(cardData.value) && parseFloat(cardData.value) > 0) {
+                        let cardPrice;
+                        if (cardData.type === 'sconto') {
+                            cardPrice = station.price - parseFloat(cardData.value);
+                        } else {
+                            cardPrice = parseFloat(cardData.value);
+                        }
+                        if (cardPrice >= minPrice && cardPrice <= maxPrice) {
+                            let cardName = card;
+                            if (card === 'ALTRO' && cardData.customName) cardName = cardData.customName;
+                            variants.push({
+                                fuel: station.fuelType,
+                                name: cardName,
+                                price: cardPrice,
+                                station: station
+                            });
+                        }
+                    }
+                });
             });
+            
             if (variants.length === 0) {
                 showToast('⚠️ Nessun prezzo valido da copiare', 'error');
                 return;
             }
+            
+            // Trova il miglior prezzo tra i carburanti selezionati
             const bestVariant = variants.reduce((min, v) => v.price < min.price ? v : min, variants[0]);
             const cheapestCardName = bestVariant.name;
             const cheapestCardPrice = bestVariant.price;
+            const cheapestFuel = bestVariant.fuel;
+            const stationInfo = bestVariant.station;
             
-            const stationKey2 = `${station.lat},${station.lng}`;
+            const stationKey2 = `${stationInfo.lat},${stationInfo.lng}`;
             const messages = stationMessages[stationKey2] || [];
             const messagesText = messages.map(msg => `${msg.type.toUpperCase()}: ${msg.text}`).join(' | ');
             
-            const coordsText = `${station.lat.toFixed(6)}, ${station.lng.toFixed(6)}`;
-            const fullAddress = `${station.address}, ${station.city} (${station.province})`;
-            let shareText = `🏪 ${station.name}\n🏷️ Brand: ${station.brand}\n📍 Indirizzo: ${fullAddress}\n💰 Migliore offerta: ${cheapestCardName} - €${cheapestCardPrice.toFixed(3)}/l\n`;
+            const coordsText = `${stationInfo.lat.toFixed(6)}, ${stationInfo.lng.toFixed(6)}`;
+            const fullAddress = `${stationInfo.address}, ${stationInfo.city} (${stationInfo.province})`;
+            
+            let shareText = `🏪 ${stationInfo.name}\n`;
+            shareText += `🏷️ Brand: ${stationInfo.brand}\n`;
+            shareText += `⛽ Carburante: ${cheapestFuel}\n`;
+            shareText += `📍 Indirizzo: ${fullAddress}\n`;
+            shareText += `💰 Migliore offerta: ${cheapestCardName} - €${cheapestCardPrice.toFixed(3)}/l\n`;
             if (messagesText && messagesText.length > 0) shareText += `📢 Messaggi: ${messagesText}\n`;
-            shareText += `🗺️ Coordinate: ${coordsText}\n🔗 Mappa: https://www.google.com/maps?q=${station.lat},${station.lng}&z=16`;
+            shareText += `🗺️ Coordinate: ${coordsText}\n`;
+            shareText += `🔗 Mappa: https://www.google.com/maps?q=${stationInfo.lat},${stationInfo.lng}&z=16`;
             
             navigator.clipboard.writeText(shareText).then(() => {
                 showToast(`📋 Dettagli stazione copiati con successo!`, 'success');
