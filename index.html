@@ -565,6 +565,8 @@
             </div>
             <div class="header-right">
                 <button class="header-btn" onclick="getCurrentLocation(true)"><i class="fas fa-location-dot"></i><span>Posizione</span></button>
+                <!-- NUOVO PULSANTE AGGIORNA MAPPA -->
+                <button class="header-btn" onclick="refreshMap()"><i class="fas fa-sync-alt"></i><span>Aggiorna</span></button>
                 <button class="header-btn" onclick="showLastUpdate()"><i class="fas fa-calendar-alt"></i><span id="lastUpdateText">Mai agg.</span></button>
                 <button class="header-btn hidden" id="configBtn" onclick="showConfigModal()"><i class="fas fa-cog"></i><span>Configurazione</span></button>
                 <button class="header-btn hidden" id="adminBtn" onclick="showAdminModal()"><i class="fas fa-user-shield"></i><span>Admin</span></button>
@@ -1052,6 +1054,9 @@
         }
 
         function resetCookieConsent() {
+            // Prima di ricaricare la pagina per il reset dei cookie, impostiamo un flag
+            // per evitare che al reload venga richiesta automaticamente la posizione.
+            sessionStorage.setItem('skip_geolocation_on_load', 'true');
             localStorage.removeItem('ga_consent');
             // Rimuovi eventuale GA caricato (semplice: ricarica la pagina per applicare le nuove impostazioni)
             location.reload();
@@ -1193,7 +1198,8 @@
             DEFAULT_BRANDS_FUELS: 'fuelMapper_defaultBrandsFuels',
             TOMTOM_API_KEY: 'fuelMapper_tomtomApiKey',
             TRAFFIC_STATE: 'fuelMapper_trafficState',
-            LAYER_PREFERENCES: 'fuelMapper_layerPreferences'
+            LAYER_PREFERENCES: 'fuelMapper_layerPreferences',
+            LOCATION_PERMISSION_GRANTED: 'fuelMapper_locationPermissionGranted' // Nuova chiave per ricordare il permesso di geolocalizzazione
         };
 
         const mapLayers = {
@@ -1331,7 +1337,21 @@
                 });
                 updateCustomCardsConfigUI();
             }
-            setTimeout(() => { initMap(); loadDataFromGoogleSheet(); getCurrentLocation(false); }, 100);
+            setTimeout(() => { 
+                initMap(); 
+                loadDataFromGoogleSheet(); 
+                // MODIFICA: verifica se l'utente ha già concesso il permesso di geolocalizzazione in passato
+                // e se non è stato impostato il flag per saltare la geolocalizzazione (ad esempio dopo reset cookie)
+                const locationPermission = localStorage.getItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED);
+                const skipGeo = sessionStorage.getItem('skip_geolocation_on_load');
+                if (skipGeo) {
+                    sessionStorage.removeItem('skip_geolocation_on_load');
+                }
+                if (locationPermission === 'true' && !skipGeo) {
+                    getCurrentLocation(false); // centra la mappa sulla posizione se già autorizzato
+                }
+                // Se non è stato mai concesso o è stato negato, non fare nulla (mappa centrata su default)
+            }, 100);
             setTimeout(() => {
                 const plattsToday = document.getElementById('plattsToday');
                 const plattsYesterday = document.getElementById('plattsYesterday');
@@ -2598,12 +2618,40 @@
             applyDefaultBrandsAndFuels();
         }
 
+        // FUNZIONE MIGLIORATA CON CONTROLLO PERMESSI E PERSISTENZA
         function getCurrentLocation(showMessageOnError = true) {
             if (!navigator.geolocation) {
                 if (showMessageOnError) showToast('❌ Geolocalizzazione non supportata dal browser', 'error');
                 return;
             }
-            showToast('📍 Richiesta posizione in corso...', 'success');
+            
+            // Verifica lo stato del permesso (se l'API Permissions è disponibile)
+            if (navigator.permissions) {
+                navigator.permissions.query({name:'geolocation'}).then(permissionStatus => {
+                    if (permissionStatus.state === 'denied') {
+                        // Salva che il permesso è stato negato per non riprovare automaticamente
+                        localStorage.setItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED, 'false');
+                        if (showMessageOnError) {
+                            showToast('⚠️ Permesso di geolocalizzazione negato. Per attivarlo, vai nelle impostazioni del browser.', 'error');
+                        }
+                        return;
+                    } else {
+                        // Permesso 'prompt' o 'granted': procedi con la richiesta
+                        requestGeolocation(showMessageOnError);
+                    }
+                }).catch(() => {
+                    // Se l'API Permissions fallisce, procedi comunque con la richiesta
+                    requestGeolocation(showMessageOnError);
+                });
+            } else {
+                // Browser non supporta Permissions API, procedi direttamente
+                requestGeolocation(showMessageOnError);
+            }
+        }
+        
+        // Funzione interna per effettuare la richiesta di geolocalizzazione
+        function requestGeolocation(showMessageOnError) {
+            if (showMessageOnError) showToast('📍 Richiesta posizione in corso...', 'success');
             const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
             navigator.geolocation.getCurrentPosition(
                 function(position) {
@@ -2620,6 +2668,8 @@
                     }).addTo(map);
                     currentLocationMarker.bindPopup('La tua posizione').openPopup();
                     showToast('✅ Posizione aggiornata!', 'success');
+                    // SALVA IL PERMESSO COME CONCESSO
+                    localStorage.setItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED, 'true');
                     displayStations();
                 },
                 function(error) {
@@ -2628,6 +2678,8 @@
                     switch(error.code) {
                         case error.PERMISSION_DENIED:
                             errorMessage = 'Permesso negato. Vai nelle impostazioni del browser e autorizza la posizione.';
+                            // SALVA CHE IL PERMESSO È STATO NEGATO
+                            localStorage.setItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED, 'false');
                             break;
                         case error.POSITION_UNAVAILABLE:
                             errorMessage = 'Posizione non disponibile. Controlla il GPS.';
