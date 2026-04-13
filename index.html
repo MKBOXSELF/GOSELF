@@ -437,6 +437,72 @@
             font-size: 16px;
         }
         
+        /* ========== MODIFICATO: NUOVI STILI PER I PULSANTI DI DISEGNO SULLA MAPPA ========== */
+        .draw-tools-container {
+            position: absolute;
+            top: 115px;                 /* posizionato subito sotto la casella "Cerca località" (che ha top: 60px + altezza ~50px) */
+            right: 20px;
+            z-index: 2001;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border-radius: 30px;          /* leggermente ridotto per compattezza */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            padding: 4px 6px;             /* ridotto lo spazio interno */
+            display: flex;
+            flex-direction: column;       /* disposizione verticale */
+            gap: 4px;                    /* ridotto il gap tra i pulsanti */
+            border: 1px solid var(--medium-gray);
+        }
+        .draw-tool-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 6px 8px;            /* ridotto il padding */
+            font-size: 0;                /* nasconde il testo (lo span è vuoto, ma per sicurezza) */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;                     /* nessuno spazio tra icona e testo (inesistente) */
+            transition: all 0.2s;
+            font-weight: 500;
+            width: 38px;                /* larghezza fissa per uniformità */
+            height: 38px;               /* altezza fissa */
+        }
+        .draw-tool-btn i {
+            font-size: 18px;            /* dimensione icona leggermente aumentata per visibilità */
+        }
+        .draw-tool-btn span {
+            display: none;              /* assicura che eventuali span siano nascosti */
+        }
+        .draw-tool-btn:hover {
+            background: var(--secondary-blue);
+            transform: scale(1.02);
+        }
+        .draw-tool-btn.active {
+            background: var(--success-green);
+            box-shadow: 0 0 0 2px white, 0 0 0 4px var(--success-green);
+        }
+        
+        /* Per mobile: i pulsanti rimangono in colonna ma ancora più compatti */
+        @media (max-width: 480px) {
+            .draw-tools-container {
+                top: 110px;
+                right: 10px;
+                padding: 4px 4px;
+                gap: 3px;
+            }
+            .draw-tool-btn {
+                padding: 4px 6px;
+                width: 36px;
+                height: 36px;
+            }
+            .draw-tool-btn i {
+                font-size: 16px;
+            }
+        }
+        
         @media (max-width: 480px) {
             .sidebar { width: 280px; }
             .sidebar-toggle { left: 280px; }
@@ -822,6 +888,12 @@
                 <button id="clearSearchLocationBtn" class="search-location-clear" style="display: none;" onclick="clearSearchedLocation()"><i class="fas fa-times-circle"></i></button>
             </div>
             <div id="locationSuggestions" class="suggestions" style="display: none; max-height: 200px; overflow-y: auto; border-top: 1px solid var(--medium-gray);"></div>
+        </div>
+        <!-- NUOVI PULSANTI DI DISEGNO SULLA MAPPA (ORA IN VERTICALE SOTTO LA CASELLA DI RICERCA) -->
+        <div class="draw-tools-container" id="mapDrawTools">
+            <button class="draw-tool-btn" id="mapPolygonBtn" onclick="activateDrawingTool('polygon')"><i class="fas fa-draw-polygon"></i> <span></span></button>
+            <button class="draw-tool-btn" id="mapCircleBtn" onclick="activateDrawingTool('circle')"><i class="fas fa-circle"></i> <span></span></button>
+            <button class="draw-tool-btn" id="mapPathBtn" onclick="activateDrawingTool('path')"><i class="fas fa-pencil-alt"></i> <span></span></button>
         </div>
         <!-- Nuovo pulsante Chiudi percorso sulla mappa (inizialmente nascosto) -->
         <div id="closeRouteMapContainer" style="display: none;">
@@ -1570,6 +1642,65 @@
             }
         }
 
+        // NUOVA FUNZIONE: Imposta i filtri iniziali se non ci sono predefiniti salvati
+        function setInitialDefaultSelections() {
+            // Controlla se esistono già predefiniti salvati (brand/fuels o filtri completi)
+            const savedBrandsFuels = localStorage.getItem(STORAGE_KEYS.DEFAULT_BRANDS_FUELS);
+            const savedFilters = localStorage.getItem(STORAGE_KEYS.DEFAULT_FILTERS);
+            
+            if (savedBrandsFuels || savedFilters) {
+                // Ci sono già predefiniti, non sovrascrivere
+                return;
+            }
+            
+            // Nessun predefinito: seleziona tutti i brand e solo "Gasolio"
+            if (allBrands.length > 0) {
+                // Seleziona tutti i brand
+                selectedBrands.clear();
+                allBrands.forEach(brand => selectedBrands.add(brand));
+                
+                // Aggiorna i checkbox dei brand nell'admin
+                const brandCheckboxes = document.querySelectorAll('#brandCheckboxContainer input[type="checkbox"]');
+                brandCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+                
+                // Aggiorna i tag visivi dei brand
+                const allTags = document.querySelectorAll('.brand-tag');
+                allTags.forEach(tag => {
+                    tag.classList.add('selected');
+                });
+            }
+            
+            if (allFuels.length > 0) {
+                // Deseleziona tutti i carburanti
+                selectedFuels.clear();
+                const fuelCheckboxes = document.querySelectorAll('#fuelCheckboxContainer input[type="checkbox"]');
+                fuelCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Seleziona solo "Gasolio" (valore esatto, incluso "Gasolio (Self)" se presente)
+                const targetFuel = allFuels.find(f => f === 'Gasolio' || f === 'Gasolio (Self)');
+                const fuelToSelect = targetFuel || 'Gasolio'; // fallback
+                
+                fuelCheckboxes.forEach(checkbox => {
+                    if (checkbox.value === fuelToSelect) {
+                        checkbox.checked = true;
+                        selectedFuels.add(checkbox.value);
+                    }
+                });
+                
+                // Se non è stato trovato "Gasolio", seleziona il primo carburante? No, meglio lasciare solo Gasolio se esiste.
+                // Se proprio non esiste, nessun carburante selezionato.
+            }
+            
+            // Aggiorna UI e applica filtri
+            updateBrandPriceControls();
+            applyFilters();
+            showToast('✅ Filtri iniziali: tutti i brand e solo Gasolio', 'success');
+        }
+
         function updateTomTomLayerKey() {
             if (mapLayers.tomtomTraffic) {
                 const newUrl = `https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${tomtomApiKey}`;
@@ -2190,6 +2321,27 @@
 
         function toggleFavoriteMode() { favoriteModeActive = !favoriteModeActive; updateConfigModal(); applyFilters(); showToast(`Modalità preferiti ${favoriteModeActive ? 'attivata' : 'disattivata'}`, 'success'); }
 
+        // ========== NUOVE FUNZIONI PER I PULSANTI SULLA MAPPA ==========
+        // Funzione unificata per attivare uno strumento di disegno dalla mappa
+        function activateDrawingTool(mode) {
+            // Se già attivo e stessa modalità, ferma il disegno
+            if (drawingActive && drawingMode === mode) {
+                stopDrawing();
+                // Rimuovi lo stato attivo dai pulsanti
+                document.querySelectorAll('.draw-tool-btn').forEach(btn => btn.classList.remove('active'));
+                showToast(`✋ Disegno interrotto`, 'success');
+                return;
+            }
+            // Altrimenti imposta modalità e avvia
+            setDrawingMode(mode);
+            startDrawingZone();
+            // Aggiorna UI pulsanti mappa
+            document.querySelectorAll('.draw-tool-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`map${mode.charAt(0).toUpperCase() + mode.slice(1)}Btn`);
+            if (activeBtn) activeBtn.classList.add('active');
+            showToast(`✏️ Modalità ${mode === 'polygon' ? 'Poligono' : mode === 'circle' ? 'Cerchio' : 'Mano libera'} attivata`, 'success');
+        }
+
         // ========== NUOVE FUNZIONI PER IL DISEGNO ZONA (POLIGONO, CERCHIO, MANO LIBERA) ==========
         function setDrawingMode(mode) {
             drawingMode = mode;
@@ -2216,7 +2368,7 @@
             } else if (mode === 'circle') {
                 instructions.innerHTML = '<i class="fas fa-info-circle"></i> Cerchio: clic per posizionare il centro, poi regola il raggio.';
             } else if (mode === 'path') {
-                instructions.innerHTML = '<i class="fas fa-pencil-alt"></i> Mano libera: tieni premuto il mouse e disegna l\'area. Rilascia per completare.';
+                instructions.innerHTML = '<i class="fas fa-pencil-alt"></i> Mano libera: tieni premuto il mouse/dito e disegna l\'area. Rilascia per completare.';
             }
         }
 
@@ -2242,11 +2394,14 @@
                 showToast('🔘 Cerchio: clicca sulla mappa per posizionare il centro.', 'success');
                 map.on('click', handleMapClickForDrawing);
             } else if (drawingMode === 'path') {
-                // Avvia disegno a mano libera
+                // Avvia disegno a mano libera (migliorato per touch)
                 freehandPoints = [];
                 isFreehandDrawing = true;
+                // Disabilita il trascinamento della mappa durante il disegno
                 map.dragging.disable();
-                showToast('✏️ Tieni premuto il mouse e disegna l\'area. Rilascia per completare.', 'success');
+                // Per mobile: impedisce lo scroll della pagina durante il disegno
+                document.body.style.overflow = 'hidden';
+                showToast('✏️ Tieni premuto il dito e disegna l\'area. Rilascia per completare.', 'success');
                 // Aggiungi listener per mouse/touch sulla mappa
                 map.on('mousedown', startFreehand);
                 map.on('mousemove', freehandMove);
@@ -2262,6 +2417,8 @@
             const startBtn = document.getElementById('startDrawBtn');
             startBtn.innerHTML = '<i class="fas fa-pencil-alt"></i> Inizia a disegnare';
             startBtn.classList.remove('active');
+            // Rimuovi eventuale classe active dai pulsanti mappa
+            document.querySelectorAll('.draw-tool-btn').forEach(btn => btn.classList.remove('active'));
             
             // Rimuovi listener specifici per modalità
             map.off('click', handleMapClickForDrawing);
@@ -2279,17 +2436,19 @@
             tempPoints = [];
             freehandPoints = [];
             isFreehandDrawing = false;
+            freehandMouseDown = false;
             map.dragging.enable();
+            document.body.style.overflow = '';
         }
 
-        // Gestori per freehand
+        // Gestori per freehand (ottimizzati per touch)
         function startFreehand(e) {
             if (!drawingActive || drawingMode !== 'path') return;
             L.DomEvent.preventDefault(e);
             freehandMouseDown = true;
             freehandPoints = [];
             if (freehandTempLayer) map.removeLayer(freehandTempLayer);
-            freehandTempLayer = L.polyline([], { color: '#FF6600', weight: 3, opacity: 0.8 }).addTo(map);
+            freehandTempLayer = L.polyline([], { color: '#FF6600', weight: 4, opacity: 0.9, smoothFactor: 1 }).addTo(map);
             const latlng = e.latlng || (e.touches ? map.mouseEventToLatLng(e.touches[0]) : null);
             if (latlng) {
                 freehandPoints.push([latlng.lat, latlng.lng]);
@@ -2317,6 +2476,8 @@
                 if (freehandTempLayer) map.removeLayer(freehandTempLayer);
                 freehandTempLayer = null;
                 freehandPoints = [];
+                // Riavviamo la modalità? no, fermiamo il disegno
+                stopDrawing();
                 return;
             }
             
@@ -2575,6 +2736,8 @@
                             showToast(`✅ Dati caricati: ${stations.length} stazioni`, 'success');
                             applyDefaultFilters();
                             applyDefaultBrandsAndFuels();
+                            // MODIFICA: Dopo aver applicato i default, se non c'erano, imposta i filtri iniziali
+                            setInitialDefaultSelections();
                         } else {
                             throw new Error('Nessuna stazione valida trovata');
                         }
@@ -2616,6 +2779,8 @@
             showToast('📋 Dati di esempio caricati', 'success');
             applyDefaultFilters();
             applyDefaultBrandsAndFuels();
+            // MODIFICA: Dopo i dati di esempio, imposta i filtri iniziali
+            setInitialDefaultSelections();
         }
 
         // FUNZIONE MIGLIORATA CON CONTROLLO PERMESSI E PERSISTENZA
