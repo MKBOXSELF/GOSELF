@@ -277,7 +277,19 @@
         .leaflet-popup-content { margin: 0; min-width: 240px; }
         .station-marker { background: transparent; border: none; }
         .marker-content { background-color: var(--primary-blue); width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 7px; line-height: 1.1; text-align: center; transition: transform 0.2s; position: relative; }
-        .marker-content:hover { transform: scale(1.05); }
+        /* Hover standard per tutti i marker */
+.marker-content:hover {
+    transform: scale(2) !important;
+    z-index: 1000 !important;
+    transition: transform 0.2s ease !important;
+}
+
+/* Hover specifico per i marker "top 5" (più convenienti sullo schermo) */
+.marker-content.cheapest-on-screen:hover {
+    transform: scale(2) !important;
+    animation: none !important; /* interrompe l'animazione pulse durante l'hover per evitare conflitti */
+    box-shadow: 0 0 15px 2px rgba(255,215,0,0.8) !important; /* mantiene l'ombra dorata */
+}
         .marker-content.favorite { border: 3px solid gold; box-shadow: 0 0 12px gold; transform: scale(1.05); }
         .marker-price { font-size: 8px; font-weight: bold; margin-top: -1px; }
         .marker-currency { font-size: 6px; opacity: 0.9; margin-bottom: -2px; }
