@@ -28,7 +28,7 @@
         .header-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 3px; font-size: 12px; transition: background 0.3s; }
         .header-btn:hover { background: rgba(255,255,255,0.3); }
         .header-btn i { font-size: 13px; }
-        .header-btn.admin-active { background: var(--accent-orange); }
+        .header-btn.box-active { background: var(--accent-orange); }
         
         .menu-btn {
             background: rgba(255,255,255,0.2);
@@ -548,7 +548,7 @@
                 <button class="header-btn" onclick="refreshMap()"><i class="fas fa-sync-alt"></i><span>Aggiorna</span></button>
                 <button class="header-btn" onclick="showLastUpdate()"><i class="fas fa-calendar-alt"></i><span id="lastUpdateText">Mai agg.</span></button>
                 <button class="header-btn hidden" id="configBtn" onclick="showConfigModal()"><i class="fas fa-cog"></i><span>Configurazione</span></button>
-                <button class="header-btn hidden" id="adminBtn" onclick="showAdminModal()"><i class="fas fa-user-shield"></i><span>Admin</span></button>
+                <button class="header-btn hidden" id="boxBtn" onclick="showboxModal()"><i class="fas fa-user-shield"></i><span>box</span></button>
             </div>
         </header>
         
@@ -829,8 +829,8 @@
             <span><a href="#" id="cookieSettingsLink" class="cookie-settings-link"><i class="fas fa-cookie-bite"></i> Preferenze Cookie</a></span><span class="separator">|</span>
             <span><a href="#" id="privacyPolicyLink" onclick="showPrivacyModal(); return false;"><i class="fas fa-shield-alt"></i> Privacy</a></span>
         </div>
-        <div class="modal hidden" id="adminModal" onclick="if(event.target === this) hideAdminModal()"><div class="modal-content"><div class="modal-header"><h3><i class="fas fa-user-shield"></i> Pannello Amministratore</h3></div><div class="modal-body"><div class="form-group"><label>Password</label><input type="password" class="form-control" id="adminPassword" placeholder="Inserisci password"></div><button class="btn btn-primary" style="width: 100%;" onclick="loginAdmin()"><i class="fas fa-sign-in-alt"></i> Accedi</button></div></div></div>
-        <div class="modal hidden" id="adminDashboardModal" onclick="if(event.target === this) hideAdminDashboard()"><div class="modal-content"><div class="modal-header"><h3><i class="fas fa-tachometer-alt"></i> Dashboard Amministratore</h3></div><div class="modal-body"><div class="stats-card"><div class="stats-row"><span><i class="fas fa-gas-pump"></i> Totale impianti:</span><strong id="totalStations">0</strong></div><div class="stats-row"><span><i class="fas fa-trademark"></i> Brand disponibili:</span><strong id="totalBrands">0</strong></div><div class="stats-row"><span><i class="fas fa-oil-can"></i> Tipologie carburante:</span><strong id="totalFuelTypes">0</strong></div><div class="stats-row"><span><i class="fas fa-chart-line"></i> Prezzo medio:</span><strong id="avgPrice">€0.000</strong></div></div><div class="form-group"><label>Importa file Excel</label><div class="file-upload" onclick="document.getElementById('excelFile').click()"><i class="fas fa-cloud-upload-alt"></i><p>Clicca per selezionare il file Excel</p><p style="font-size: 12px; color: #666;">(formato .xlsx, .xls)</p></div><input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;" onchange="importExcelFile(this)"></div><div style="display: flex; gap: 10px;"><button class="btn btn-secondary" style="flex: 1;" onclick="hideAdminDashboard()">Chiudi</button><button class="btn btn-primary" style="flex: 1;" onclick="logoutAdmin()"><i class="fas fa-sign-out-alt"></i> Logout</button></div></div></div></div>
+        <div class="modal hidden" id="boxModal" onclick="if(event.target === this) hideboxModal()"><div class="modal-content"><div class="modal-header"><h3><i class="fas fa-user-shield"></i> Pannello box</h3></div><div class="modal-body"><div class="form-group"><label>Password</label><input type="password" class="form-control" id="boxPassword" placeholder="Inserisci password"></div><button class="btn btn-primary" style="width: 100%;" onclick="loginbox()"><i class="fas fa-sign-in-alt"></i> Accedi</button></div></div></div>
+        <div class="modal hidden" id="boxDashboardModal" onclick="if(event.target === this) hideboxDashboard()"><div class="modal-content"><div class="modal-header"><h3><i class="fas fa-tachometer-alt"></i> Dashboard box</h3></div><div class="modal-body"><div class="stats-card"><div class="stats-row"><span><i class="fas fa-gas-pump"></i> Totale impianti:</span><strong id="totalStations">0</strong></div><div class="stats-row"><span><i class="fas fa-trademark"></i> Brand disponibili:</span><strong id="totalBrands">0</strong></div><div class="stats-row"><span><i class="fas fa-oil-can"></i> Tipologie carburante:</span><strong id="totalFuelTypes">0</strong></div><div class="stats-row"><span><i class="fas fa-chart-line"></i> Prezzo medio:</span><strong id="avgPrice">€0.000</strong></div></div><div class="form-group"><label>Importa file Excel</label><div class="file-upload" onclick="document.getElementById('excelFile').click()"><i class="fas fa-cloud-upload-alt"></i><p>Clicca per selezionare il file Excel</p><p style="font-size: 12px; color: #666;">(formato .xlsx, .xls)</p></div><input type="file" id="excelFile" accept=".xlsx,.xls" style="display: none;" onchange="importExcelFile(this)"></div><div style="display: flex; gap: 10px;"><button class="btn btn-secondary" style="flex: 1;" onclick="hideboxDashboard()">Chiudi</button><button class="btn btn-primary" style="flex: 1;" onclick="logoutbox()"><i class="fas fa-sign-out-alt"></i> Logout</button></div></div></div></div>
         <div class="modal hidden" id="routeModal"><div class="modal-content"><div class="modal-header"><h3><i class="fas fa-map-signs"></i> Pianifica percorso</h3><button class="modal-close-btn" onclick="hideRouteModal()"><i class="fas fa-times"></i></button></div><div class="modal-body"><div class="form-group"><label>Partenza</label><div class="radio-group"><label class="radio-option"><input type="radio" name="startType" value="current" checked onchange="toggleStartInput()"><span>Posizione attuale</span></label><label class="radio-option"><input type="radio" name="startType" value="custom" onchange="toggleStartInput()"><span>Inserisci indirizzo</span></label></div><div style="position: relative;"><input type="text" class="form-control" id="startInput" placeholder="Inserisci indirizzo di partenza" style="margin-top: 10px; display: none;" oninput="searchSuggestions(this.value, 'start')"><div id="startSuggestions" class="suggestions" style="display: none;"></div></div></div><div class="form-group"><label><i class="fas fa-map-pin" style="color: #FF6600;"></i> Tappa intermedia (opzionale)</label><div class="radio-group" style="margin-bottom: 5px;"><label class="radio-option"><input type="checkbox" id="enableWaypoint" onchange="toggleWaypointInput()"><span>Aggiungi tappa intermedia</span></label></div><div style="position: relative;"><input type="text" class="form-control" id="waypointInput" placeholder="Inserisci indirizzo tappa intermedia" disabled oninput="searchSuggestions(this.value, 'waypoint')"><div id="waypointSuggestions" class="suggestions" style="display: none;"></div></div></div><div class="form-group"><label>Destinazione</label><div style="position: relative;"><input type="text" class="form-control" id="endInput" placeholder="Inserisci indirizzo o città" oninput="searchSuggestions(this.value, 'end')"><div id="endSuggestions" class="suggestions" style="display: none;"></div></div></div><div class="form-group"><label>Deviazione massima (km)</label><input type="number" class="form-control" id="modalDeviation" min="1" max="20" value="5"></div><div style="display: flex; gap: 10px;"><button class="btn btn-secondary" style="flex: 1;" onclick="hideRouteModal()">Annulla</button><button class="btn btn-primary" style="flex: 1;" onclick="calculateRoute()"><i class="fas fa-calculator"></i> Calcola</button></div></div></div></div>
         <div class="modal hidden" id="configModal" onclick="if(event.target === this) hideConfigModal()"><div class="modal-content" style="max-width: 750px;"><div class="modal-header"><h3><i class="fas fa-sliders-h"></i> Configurazione Avanzata</h3><button class="modal-close-btn" onclick="hideConfigModal()"><i class="fas fa-times"></i></button></div><div class="modal-body">
             <div class="config-section"><div class="config-title"><i class="fas fa-trademark"></i> Selezione Brand</div><div class="brand-multiselect" id="brandMultiselect"><div class="brand-select-header"><span>Seleziona i brand da visualizzare</span><span class="select-all-btn" onclick="toggleAllBrands(true)">Tutti</span><span class="select-all-btn" onclick="toggleAllBrands(false)">Nessuno</span></div><div id="brandCheckboxContainer"></div></div><p style="font-size: 11px; color: #666; margin-top: 8px;"><i class="fas fa-info-circle"></i> I brand selezionati verranno mostrati nella sidebar e nei filtri</p></div>
@@ -1228,7 +1228,7 @@
         let startPoint = null;
         let endPoint = null;
         let lastUpdate = null;
-        let isAdmin = false;
+        let isbox = false;
         let searchTimeout = null;
         let waypointPoint = null;
         let selectedBrands = new Set();
@@ -1480,10 +1480,10 @@
                     e.stopPropagation();
                     clickCount++;
                     if (clickCount === 7) {
-                        const adminBtn = document.getElementById('adminBtn');
-                        if (adminBtn) {
-                            adminBtn.classList.remove('hidden');
-                            showToast('🔓 Modalità Admin sbloccata!', 'success');
+                        const boxBtn = document.getElementById('boxBtn');
+                        if (boxBtn) {
+                            boxBtn.classList.remove('hidden');
+                            showToast('🔓 Modalità box sbloccata!', 'success');
                         }
                         clickCount = 0;
                     } 
@@ -1683,7 +1683,7 @@
                 selectedBrands.clear();
                 allBrands.forEach(brand => selectedBrands.add(brand));
                 
-                // Aggiorna i checkbox dei brand nell'admin
+                // Aggiorna i checkbox dei brand nell'box
                 const brandCheckboxes = document.querySelectorAll('#brandCheckboxContainer input[type="checkbox"]');
                 brandCheckboxes.forEach(checkbox => {
                     checkbox.checked = true;
@@ -1735,7 +1735,7 @@
         function setMapLayer(layerName) {
             if (!map || !mapLayers[layerName]) return;
             if (layerName === 'tomtomTraffic' && !tomtomApiKey) {
-                showToast('⚠️ Inserisci la TomTom API Key nella configurazione (Admin → Configurazione Avanzata)', 'error');
+                showToast('⚠️ Inserisci la TomTom API Key nella configurazione (box → Configurazione Avanzata)', 'error');
                 return;
             }
             if (currentBaseLayer) map.removeLayer(currentBaseLayer);
@@ -2015,8 +2015,8 @@
                     }
                 }
             });
-            const adminCheckboxes = document.querySelectorAll('#brandCheckboxContainer input[type="checkbox"]');
-            adminCheckboxes.forEach(checkbox => {
+            const boxCheckboxes = document.querySelectorAll('#brandCheckboxContainer input[type="checkbox"]');
+            boxCheckboxes.forEach(checkbox => {
                 if (checkbox.value === brand) {
                     checkbox.checked = selectedBrands.has(brand);
                 }
@@ -2216,20 +2216,20 @@
             input.click();
         }
 
-        function loginAdmin() {
-            const password = document.getElementById('adminPassword').value;
-            if (password === 'admin123') {
-                isAdmin = true; hideAdminModal(); showAdminDashboard();
+        function loginbox() {
+            const password = document.getElementById('boxPassword').value;
+            if (password === 'box123') {
+                isbox = true; hideboxModal(); showboxDashboard();
                 document.getElementById('configBtn').classList.remove('hidden');
-                document.getElementById('adminBtn').classList.add('admin-active');
-                showToast('✅ Accesso Admin effettuato', 'success');
+                document.getElementById('boxBtn').classList.add('box-active');
+                showToast('✅ Accesso box effettuato', 'success');
             } else alert('Password errata');
         }
 
-        function logoutAdmin() { isAdmin = false; hideAdminDashboard(); document.getElementById('configBtn').classList.add('hidden'); document.getElementById('adminBtn').classList.remove('admin-active'); showToast('Logout effettuato', 'success'); }
+        function logoutbox() { isbox = false; hideboxDashboard(); document.getElementById('configBtn').classList.add('hidden'); document.getElementById('boxBtn').classList.remove('box-active'); showToast('Logout effettuato', 'success'); }
 
         function showConfigModal() {
-            if (!isAdmin) { showToast('Accesso negato - effettuare login Admin', 'error'); return; }
+            if (!isbox) { showToast('Accesso negato - effettuare login box', 'error'); return; }
             updateConfigModal(); updateCustomCardsConfigUI(); updateBrandPriceControls(); 
             loadLayerPrefsIntoModal(); // carica le preferenze dei layer nella modale
             document.getElementById('configModal').classList.remove('hidden');
@@ -2802,7 +2802,7 @@
                             lastUpdate = new Date();
                             updateLastUpdateText();
                             updateFilterOptions();
-                            updateAdminStats();
+                            updateboxStats();
                             updatePriceRange();
                             updateConfigModal();
                             displayStations();
@@ -2847,7 +2847,7 @@
             stations.push({ brand: "Q8", name: "Q8 CORSO TASSONI", address: "CORSO TASSONI 2", city: "TORINO", province: "TO", lat: 45.07688, lng: 7.65646, fuelType: "Benzina", price: 1.689, lastUpdate: "2026-03-02", diff: -5, description: "Benzina" });
             stations.push({ brand: "Eni", name: "Eni Station", address: "Via Roma 1", city: "Roma", province: "RM", lat: 41.9028, lng: 12.4964, fuelType: "GPL", price: 0.789, lastUpdate: "2026-03-02", diff: 0, description: "GPL" });
             stations.push({ brand: "Tamoil", name: "Tamoil", address: "Via Nazionale", city: "Firenze", province: "FI", lat: 43.7696, lng: 11.2558, fuelType: "Metano", price: 1.299, lastUpdate: "2026-03-02", diff: 0, description: "Metano" });
-            lastUpdate = new Date(); updateLastUpdateText(); updateFilterOptions(); updateAdminStats(); updateConfigModal(); filteredStations = [...stations];
+            lastUpdate = new Date(); updateLastUpdateText(); updateFilterOptions(); updateboxStats(); updateConfigModal(); filteredStations = [...stations];
             setTimeout(() => { updatePriceRange(); displayStations(); }, 500);
             showToast('📋 Dati di esempio caricati', 'success');
             applyDefaultFilters();
@@ -3027,10 +3027,10 @@
             const brandContainer = document.getElementById('brandCheckboxContainer'); brandContainer.innerHTML = '';
             allBrands.forEach(brand => {
                 const div = document.createElement('div'); div.className = 'brand-checkbox-item';
-                div.onclick = (e) => { if (e.target.tagName !== 'INPUT') { const checkbox = div.querySelector('input[type="checkbox"]'); checkbox.checked = !checkbox.checked; updateBrandSelectionFromAdmin(checkbox); } };
+                div.onclick = (e) => { if (e.target.tagName !== 'INPUT') { const checkbox = div.querySelector('input[type="checkbox"]'); checkbox.checked = !checkbox.checked; updateBrandSelectionFrombox(checkbox); } };
                 const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = brand;
                 checkbox.checked = selectedBrands.has(brand);
-                checkbox.onchange = (e) => { e.stopPropagation(); updateBrandSelectionFromAdmin(checkbox); };
+                checkbox.onchange = (e) => { e.stopPropagation(); updateBrandSelectionFrombox(checkbox); };
                 const label = document.createElement('label'); label.textContent = brand;
                 div.appendChild(checkbox); div.appendChild(label);
                 brandContainer.appendChild(div);
@@ -3039,7 +3039,7 @@
             updateBrandPriceControls();
         }
         
-        function updateBrandSelectionFromAdmin(checkbox) {
+        function updateBrandSelectionFrombox(checkbox) {
             const brand = checkbox.value;
             if (checkbox.checked) selectedBrands.add(brand);
             else selectedBrands.delete(brand);
@@ -3695,12 +3695,12 @@
             // Nascondi il pulsante sulla mappa
             document.getElementById('closeRouteMapContainer').style.display = 'none';
         }
-        function showAdminModal() { document.getElementById('adminModal').classList.remove('hidden'); }
-        function hideAdminModal() { document.getElementById('adminModal').classList.add('hidden'); }
-        function showAdminDashboard() { updateAdminStats(); document.getElementById('adminDashboardModal').classList.remove('hidden'); }
-        function hideAdminDashboard() { document.getElementById('adminDashboardModal').classList.add('hidden'); }
-        function updateAdminStats() { document.getElementById('totalStations').textContent = stations.length; const brands = new Set(stations.map(s => s.brand)); document.getElementById('totalBrands').textContent = brands.size; const fuelTypes = new Set(stations.map(s => s.fuelType)); document.getElementById('totalFuelTypes').textContent = fuelTypes.size; const avgPrice = stations.reduce((sum, s) => sum + s.price, 0) / stations.length; document.getElementById('avgPrice').textContent = '€' + avgPrice.toFixed(3); }
-        function importExcelFile(input) { const file = input.files[0]; if (!file) return; showLoading(); const reader = new FileReader(); reader.onload = function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const sheetName = workbook.SheetNames.find(name => name.includes('PREZZI_OGGI')); if (sheetName) { const sheet = workbook.Sheets[sheetName]; const jsonData = XLSX.utils.sheet_to_json(sheet); const newStations = jsonData.map(row => ({ brand: row['Brand'] || '', name: row['Nome Impianto'] || '', address: row['Indirizzo'] || '', city: row['Comune'] || '', province: row['Provincia'] || '', lat: parseFloat(row['Latitudine']) || 0, lng: parseFloat(row['Longitudine']) || 0, fuelType: row['Carburante'] || '', price: parseFloat(row['Prezzo']) || 0, lastUpdate: row['Data Aggiornamento'] || new Date().toISOString().split('T')[0], diff: parseInt(row['DIFFERENZA']) || 0, description: row['DESCRIZIONE'] || '' })).filter(s => s.lat && s.lng && s.price > 0); if (newStations.length > 0) { stations = newStations; filteredStations = [...stations]; lastUpdate = new Date(); updateLastUpdateText(); updateFilterOptions(); updateAdminStats(); updatePriceRange(); updateConfigModal(); displayStations(); showToast('File importato con successo! ' + stations.length + ' stazioni caricate', 'success'); } else showToast('Nessuna stazione valida trovata nel file', 'error'); } else showToast('Foglio PREZZI_OGGI non trovato', 'error'); } catch (error) { console.error('Errore importazione:', error); showToast('Errore durante l\'importazione del file', 'error'); } hideLoading(); input.value = ''; }; reader.readAsArrayBuffer(file); }
+        function showboxModal() { document.getElementById('boxModal').classList.remove('hidden'); }
+        function hideboxModal() { document.getElementById('boxModal').classList.add('hidden'); }
+        function showboxDashboard() { updateboxStats(); document.getElementById('boxDashboardModal').classList.remove('hidden'); }
+        function hideboxDashboard() { document.getElementById('boxDashboardModal').classList.add('hidden'); }
+        function updateboxStats() { document.getElementById('totalStations').textContent = stations.length; const brands = new Set(stations.map(s => s.brand)); document.getElementById('totalBrands').textContent = brands.size; const fuelTypes = new Set(stations.map(s => s.fuelType)); document.getElementById('totalFuelTypes').textContent = fuelTypes.size; const avgPrice = stations.reduce((sum, s) => sum + s.price, 0) / stations.length; document.getElementById('avgPrice').textContent = '€' + avgPrice.toFixed(3); }
+        function importExcelFile(input) { const file = input.files[0]; if (!file) return; showLoading(); const reader = new FileReader(); reader.onload = function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const sheetName = workbook.SheetNames.find(name => name.includes('PREZZI_OGGI')); if (sheetName) { const sheet = workbook.Sheets[sheetName]; const jsonData = XLSX.utils.sheet_to_json(sheet); const newStations = jsonData.map(row => ({ brand: row['Brand'] || '', name: row['Nome Impianto'] || '', address: row['Indirizzo'] || '', city: row['Comune'] || '', province: row['Provincia'] || '', lat: parseFloat(row['Latitudine']) || 0, lng: parseFloat(row['Longitudine']) || 0, fuelType: row['Carburante'] || '', price: parseFloat(row['Prezzo']) || 0, lastUpdate: row['Data Aggiornamento'] || new Date().toISOString().split('T')[0], diff: parseInt(row['DIFFERENZA']) || 0, description: row['DESCRIZIONE'] || '' })).filter(s => s.lat && s.lng && s.price > 0); if (newStations.length > 0) { stations = newStations; filteredStations = [...stations]; lastUpdate = new Date(); updateLastUpdateText(); updateFilterOptions(); updateboxStats(); updatePriceRange(); updateConfigModal(); displayStations(); showToast('File importato con successo! ' + stations.length + ' stazioni caricate', 'success'); } else showToast('Nessuna stazione valida trovata nel file', 'error'); } else showToast('Foglio PREZZI_OGGI non trovato', 'error'); } catch (error) { console.error('Errore importazione:', error); showToast('Errore durante l\'importazione del file', 'error'); } hideLoading(); input.value = ''; }; reader.readAsArrayBuffer(file); }
         function exportFilteredToExcel() { if (filteredStations.length === 0) { showToast('Nessuna stazione da esportare', 'error'); return; } try { const exportData = filteredStations.map(s => ({ 'Brand': s.brand, 'Nome Impianto': s.name, 'Indirizzo': s.address, 'Comune': s.city, 'Provincia': s.province, 'Latitudine': s.lat, 'Longitudine': s.lng, 'Carburante': s.fuelType, 'Prezzo': s.price, 'Tipo Prezzo': s.priceType || 'originale', 'Carta': s.cardName || '', 'Prezzo Originale': s.originalPrice || s.price, 'Data Aggiornamento': s.lastUpdate, 'DIFFERENZA': s.diff || 0, 'DESCRIZIONE': s.description || '' })); const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, 'PREZZI_OGGI'); const now = new Date(); const filename = `stazioni_filtrate_${now.toISOString().slice(0,10).replace(/-/g, '')}_${now.toTimeString().slice(0,8).replace(/:/g, '')}.xlsx`; XLSX.writeFile(wb, filename); showToast(`✅ Esportate ${filteredStations.length} stazioni`, 'success'); } catch (error) { console.error('Errore durante l\'esportazione:', error); showToast('❌ Errore durante l\'esportazione', 'error'); } }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const toggleIcon = document.getElementById('toggleIcon'); sidebar.classList.toggle('collapsed'); toggleIcon.className = sidebar.classList.contains('collapsed') ? 'fas fa-cog' : 'fas fa-cog'; setTimeout(() => { if (map) map.invalidateSize(); }, 300); }
         function showLoading() { document.getElementById('loadingOverlay').classList.remove('hidden'); }
