@@ -2743,7 +2743,7 @@
 
         function loadDataFromGoogleSheet() {
             showLoading();
-            const scriptUrl = 'https://script.google.com/macros/s/AKfycbyQvSTyPjSsEgXFPX0ZSrG0sdW4f8nOe3LeKobLyGqupqzMaN_uLV80vlgpj0aODK0fnA/exec';
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbw_zwZsyeQfpOVyb53X7Hv41Fl4lKzAG2E08rLbhkE53aDBfiG2jIEo53wVQKFwdc6psA/exec';
             fetch(scriptUrl)
                 .then(response => {
                     if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
