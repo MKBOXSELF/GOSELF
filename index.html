@@ -24,11 +24,28 @@
         .app-header { background: var(--primary-blue); color: white; display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); min-height: 44px; }
         .logo { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
         .logo i { font-size: 20px; }
-        .header-right { display: flex; gap: 4px; }
+        .header-right { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
         .header-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 3px; font-size: 12px; transition: background 0.3s; }
         .header-btn:hover { background: rgba(255,255,255,0.3); }
         .header-btn i { font-size: 13px; }
         .header-btn.box-active { background: var(--accent-orange); }
+        .header-btn.nav-active { background: var(--success-green); animation: pulse-green 1.5s infinite; }
+        /* Pulsante Guida Notturna */
+        #nightModeBtn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none; /* nascosto di default, mostrato da JS quando navigatore attivo */
+            align-items: center;
+            gap: 3px;
+            font-size: 12px;
+            transition: background 0.3s, color 0.3s;
+        }
+        #nightModeBtn:hover { background: rgba(255,255,255,0.3); }
+        #nightModeBtn.active { background: var(--accent-orange); color: white; box-shadow: 0 0 8px rgba(255,102,0,0.6); }
         
         .menu-btn {
             background: rgba(255,255,255,0.2);
@@ -534,6 +551,279 @@
             .cookie-banner-content { flex-direction: column; text-align: center; }
             .cookie-buttons { justify-content: center; }
         }
+        /* Stili per i controlli zoom navigatore - spostati in basso a sinistra */
+        .nav-zoom-controls {
+            position: fixed;
+            bottom: 100px;
+            left: 15px;
+            z-index: 1500;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(5px);
+            border-radius: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            padding: 4px 8px;
+            display: flex;
+            gap: 6px;
+            border: 1px solid var(--medium-gray);
+            transition: opacity 0.3s;
+        }
+        .nav-zoom-controls.hidden { display: none; }
+        .nav-zoom-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .nav-zoom-btn:hover { background: var(--secondary-blue); transform: scale(1.02); }
+        .nav-zoom-btn.active { background: var(--accent-orange); box-shadow: 0 0 5px rgba(0,0,0,0.2); }
+        .nav-zoom-btn i { margin-right: 3px; }
+
+        /* ===== STILI MODALITÀ NOTTURNA (night-mode) ===== */
+        body.night-mode .app-header {
+            background: #1a1a2e;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+        body.night-mode .global-footer {
+            background: rgba(20,20,30,0.95);
+            color: #ccc;
+            border-top: 1px solid #333;
+        }
+        body.night-mode .global-footer a {
+            color: #66b0ff;
+        }
+        body.night-mode .sidebar {
+            background: #1e1e2f;
+            color: #ddd;
+        }
+        body.night-mode .sidebar .brand-tag {
+            background: #2a2a3d;
+            border-color: #444;
+            color: #ccc;
+        }
+        body.night-mode .sidebar .brand-tag.selected {
+            background: var(--accent-orange);
+            color: white;
+        }
+        body.night-mode .sidebar .filter-panel,
+        body.night-mode .sidebar .draw-zone-panel,
+        body.night-mode .sidebar .selected-brands-panel,
+        body.night-mode .sidebar .route-panel {
+            background: #25253a;
+            border-color: #444;
+        }
+        body.night-mode .sidebar .filter-header,
+        body.night-mode .sidebar .draw-zone-header,
+        body.night-mode .sidebar .selected-brands-header,
+        body.night-mode .sidebar .route-header {
+            background: #0d0d1a;
+        }
+        body.night-mode .sidebar .filter-content,
+        body.night-mode .sidebar .draw-zone-content,
+        body.night-mode .sidebar .selected-brands-content,
+        body.night-mode .sidebar .route-content {
+            background: #1e1e2f;
+        }
+        body.night-mode .sidebar .filter-label,
+        body.night-mode .sidebar .filter-group label {
+            color: #ccc;
+        }
+        body.night-mode .sidebar .fuel-checkbox-item label {
+            color: #ddd;
+        }
+        body.night-mode .sidebar .fuel-multiselect {
+            background: #2a2a3d;
+            border-color: #444;
+        }
+        body.night-mode .sidebar .price-labels {
+            color: #ccc;
+        }
+        body.night-mode .sidebar .card-row {
+            background: #2a2a3d;
+            border-color: #444;
+        }
+        body.night-mode .sidebar .card-name-col {
+            color: #88ccff;
+        }
+        body.night-mode .sidebar .brand-price-item {
+            background: #2a2a3d;
+            border-color: #444;
+        }
+        body.night-mode .sidebar .brand-price-title {
+            color: #88ccff;
+        }
+        body.night-mode .sidebar .brand-price-controls {
+            background: #1e1e2f;
+            border-color: #444;
+        }
+        body.night-mode .sidebar .platts-input-row {
+            background: #2a2a3d;
+            border-color: #444;
+        }
+        body.night-mode .sidebar .platts-input-row label {
+            color: #ccc;
+        }
+        body.night-mode .sidebar .platts-note {
+            background: #2a2a3d;
+            color: #aaa;
+        }
+        body.night-mode .sidebar .btn-secondary {
+            background: #333;
+            color: #ddd;
+            border-color: #555;
+        }
+        body.night-mode .sidebar .btn-secondary:hover {
+            background: #444;
+        }
+        body.night-mode .sidebar .persistence-actions button {
+            background: #2a2a3d;
+            color: #ddd;
+        }
+        body.night-mode .sidebar .persistence-actions button.reset {
+            background: #5c1a1a;
+        }
+        body.night-mode .sidebar .persistence-actions button.export-log {
+            background: #1a4a1a;
+        }
+        body.night-mode .sidebar .persistence-actions button.import-log {
+            background: #4a3a1a;
+        }
+        body.night-mode .draw-tools-container {
+            background: rgba(30,30,47,0.95);
+            border-color: #444;
+        }
+        body.night-mode .layer-control {
+            background: rgba(30,30,47,0.9);
+            border-color: #444;
+        }
+        body.night-mode .layer-control button {
+            background: #2a2a3d;
+            color: #ccc;
+        }
+        body.night-mode .layer-control button.active {
+            background: var(--accent-orange);
+            color: white;
+        }
+        body.night-mode .nav-zoom-controls {
+            background: rgba(30,30,47,0.9);
+            border-color: #444;
+        }
+        body.night-mode .nav-zoom-btn {
+            background: #2a2a3d;
+            color: #ccc;
+        }
+        body.night-mode .nav-zoom-btn.active {
+            background: var(--accent-orange);
+            color: white;
+        }
+        body.night-mode .search-location-container {
+            background: #2a2a3d !important;
+            border-color: #444 !important;
+        }
+        body.night-mode .search-location-container input {
+            background: #1e1e2f;
+            color: #eee;
+            border-color: #444;
+        }
+        body.night-mode .suggestions {
+            background: #1e1e2f;
+            border-color: #444;
+        }
+        body.night-mode .suggestion-item {
+            color: #ddd;
+            border-bottom-color: #333;
+        }
+        body.night-mode .suggestion-item:hover {
+            background: #2a2a3d;
+        }
+        body.night-mode .modal-content {
+            background: #1e1e2f;
+            color: #ddd;
+        }
+        body.night-mode .modal-header {
+            background: #0d0d1a;
+        }
+        body.night-mode .modal-body {
+            background: #1e1e2f;
+            color: #ddd;
+        }
+        body.night-mode .form-group label {
+            color: #ccc;
+        }
+        body.night-mode .form-control {
+            background: #2a2a3d;
+            color: #eee;
+            border-color: #444;
+        }
+        body.night-mode .radio-option {
+            color: #ccc;
+        }
+        body.night-mode .config-section {
+            background: #25253a;
+        }
+        body.night-mode .config-title {
+            color: #88ccff;
+            border-bottom-color: #444;
+        }
+        body.night-mode .brand-checkbox-item label {
+            color: #ddd;
+        }
+        body.night-mode .brand-multiselect {
+            background: #2a2a3d;
+            border-color: #444;
+        }
+        body.night-mode .brand-select-header .select-all-btn {
+            background: #333;
+            color: #ddd;
+        }
+        body.night-mode .btn-secondary {
+            background: #333;
+            color: #ddd;
+        }
+        body.night-mode .btn-primary {
+            background: var(--accent-orange);
+            color: white;
+        }
+        body.night-mode .btn-close {
+            color: white;
+        }
+        body.night-mode .info-modal-content h4 {
+            color: #88ccff;
+        }
+        body.night-mode .contact-highlight {
+            background: #2a2a3d;
+        }
+        body.night-mode .info-modal-content a {
+            color: #66b0ff;
+        }
+        body.night-mode .stats-card {
+            background: #2a2a3d;
+        }
+        body.night-mode .stats-row {
+            border-bottom-color: #444;
+            color: #ddd;
+        }
+        body.night-mode .file-upload {
+            border-color: #444;
+        }
+        body.night-mode .file-upload i {
+            color: #66b0ff;
+        }
+        body.night-mode .menu-item {
+            border-bottom-color: #333;
+            color: #ddd;
+        }
+        body.night-mode .menu-item:hover {
+            background: #2a2a3d;
+        }
+        body.night-mode .menu-item i {
+            color: #88ccff;
+        }
     </style>
 </head>
 <body>
@@ -544,6 +834,14 @@
                 <div class="logo"><i class="fas fa-gas-pump"></i><span>MK_GO_FUEL_SELF_DEMO</span></div>
             </div>
             <div class="header-right">
+                <!-- Pulsante Modalità Navigatore -->
+                <button class="header-btn" id="navigatorBtn" onclick="toggleNavigatorMode()">
+                    <i class="fas fa-satellite-dish"></i><span>Navigatore</span>
+                </button>
+                <!-- Pulsante Guida Notturna (visibile solo quando navigatore attivo) -->
+                <button id="nightModeBtn" onclick="toggleNightMode()">
+                    <i class="fas fa-moon"></i><span>Guida Notturna</span>
+                </button>
                 <button class="header-btn" onclick="getCurrentLocation(true)"><i class="fas fa-location-dot"></i><span>Posizione</span></button>
                 <button class="header-btn" onclick="refreshMap()"><i class="fas fa-sync-alt"></i><span>Aggiorna</span></button>
                 <button class="header-btn" onclick="showLastUpdate()"><i class="fas fa-calendar-alt"></i><span id="lastUpdateText">Mai agg.</span></button>
@@ -718,7 +1016,8 @@
             </div>
         </div>
 
-        <div class="sidebar" id="sidebar">
+        <!-- MODIFICA: Aggiunta classe "collapsed" per nascondere la sidebar all'avvio -->
+        <div class="sidebar collapsed" id="sidebar">
             <div class="sidebar-content">
                 <!-- RIMOSSO: Pianifica percorso dalla sidebar -->
                 <div class="draw-zone-panel">
@@ -820,6 +1119,14 @@
         <div id="closeRouteMapContainer" style="display: none;">
             <button class="close-route-map-btn" onclick="closeRoutePanel()"><i class="fas fa-times-circle"></i> Chiudi percorso</button>
         </div>
+
+        <!-- Controlli zoom navigatore (3 livelli) - spostati in basso a sinistra -->
+        <div id="navZoomControls" class="nav-zoom-controls hidden">
+            <button class="nav-zoom-btn" data-zoom="25" onclick="setNavigatorZoom(25)"><i class="fas fa-search-plus"></i> Vicino</button>
+            <button class="nav-zoom-btn active" data-zoom="16" onclick="setNavigatorZoom(16)"><i class="fas fa-search"></i> Medio</button>
+            <button class="nav-zoom-btn" data-zoom="10" onclick="setNavigatorZoom(10)"><i class="fas fa-search-minus"></i> Lontano</button>
+        </div>
+
         <div class="global-footer">
             <span>© 2026 Spina Michele - Web Creator</span><span class="separator">|</span>
             <span>Tutti i contenuti sono di proprietà esclusiva - Vietato scraping (L.633/41)</span><span class="separator">|</span>
@@ -1262,6 +1569,15 @@
         let trafficLayer = null;
         let isTrafficActive = false;
         
+        // ========== NUOVE VARIABILI PER LA MODALITÀ NAVIGATORE ==========
+        let navigatorModeActive = false;
+        let navigatorWatchId = null;
+        let navigatorZoomLevel = 13; // default
+
+        // ========== NUOVA VARIABILE PER LA GUIDA NOTTURNA ==========
+        let nightModeActive = false;
+        let previousLayerName = 'standard'; // per ripristinare il layer quando si disattiva la notte
+
         // ========== NUOVE VARIABILI PER LE MODALITÀ DI DISEGNO ZONA ==========
         let drawingMode = 'polygon';   // 'polygon', 'circle', 'path'
         let currentCircle = null;      // cerchio disegnato (L.circle)
@@ -3324,6 +3640,212 @@
         }
 
         function refreshMap() { displayStations(); showToast('🗺️ Mappa aggiornata', 'success'); }
+
+        // ==================== FUNZIONI PER LA MODALITÀ NAVIGATORE ====================
+        function toggleNavigatorMode() {
+            const btn = document.getElementById('navigatorBtn');
+            const nightBtn = document.getElementById('nightModeBtn');
+            if (navigatorModeActive) {
+                // Disattiva
+                navigatorModeActive = false;
+                if (navigatorWatchId) {
+                    navigator.geolocation.clearWatch(navigatorWatchId);
+                    navigatorWatchId = null;
+                }
+                btn.classList.remove('nav-active');
+                document.getElementById('navZoomControls').classList.add('hidden');
+                // Nascondi il pulsante Guida Notturna
+                nightBtn.style.display = 'none';
+                // Se la notte era attiva, disattivala
+                if (nightModeActive) {
+                    toggleNightMode(); // disattiva
+                }
+                showToast('🛑 Modalità Navigatore disattivata', 'success');
+                // Rimuovi marker di posizione? Lasciamo il marker statico.
+                // Non forziamo il refresh della mappa, manteniamo i marker.
+                applyFilters(); // riapplica filtri per mostrare tutti i marker
+            } else {
+                // Attiva
+                if (!navigator.geolocation) {
+                    showToast('❌ Geolocalizzazione non supportata', 'error');
+                    return;
+                }
+                // Richiedi posizione e avvia watch
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {
+                        currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        map.setView([currentPosition.lat, currentPosition.lng], navigatorZoomLevel);
+                        if (currentLocationMarker) map.removeLayer(currentLocationMarker);
+                        currentLocationMarker = L.marker([currentPosition.lat, currentPosition.lng], { 
+                            icon: L.divIcon({ 
+                                className: 'navigator-location-marker', 
+                                html: '<div style="background-color: #0066B3; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"><i class="fas fa-car" style="color: white; font-size: 16px;"></i></div>', 
+                                iconSize: [32, 32], 
+                                popupAnchor: [0, -16] 
+                            }) 
+                        }).addTo(map);
+                        // Non viene aggiunto alcun popup automatico
+                        
+                        // Avvia watch
+                        if (navigatorWatchId) navigator.geolocation.clearWatch(navigatorWatchId);
+                        navigatorWatchId = navigator.geolocation.watchPosition(
+                            function(pos) {
+                                currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                                map.setView([currentPosition.lat, currentPosition.lng], navigatorZoomLevel);
+                                if (currentLocationMarker) {
+                                    currentLocationMarker.setLatLng([currentPosition.lat, currentPosition.lng]);
+                                }
+                                // Filtra le stazioni per mostrare solo le 10 più vicine
+                                applyNavigatorFilter();
+                            },
+                            function(err) {
+                                console.warn('Watch position error:', err);
+                            },
+                            { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
+                        );
+                        
+                        navigatorModeActive = true;
+                        btn.classList.add('nav-active');
+                        document.getElementById('navZoomControls').classList.remove('hidden');
+                        // Mostra il pulsante Guida Notturna
+                        nightBtn.style.display = 'flex';
+                        showToast('📍 Modalità Navigatore attivata. Mostro le 10 stazioni più vicine.', 'success');
+                        applyNavigatorFilter();
+                    },
+                    function(err) {
+                        showToast('⚠️ Impossibile ottenere la posizione per il navigatore. Verifica i permessi.', 'error');
+                    },
+                    { enableHighAccuracy: true, timeout: 15000 }
+                );
+            }
+        }
+
+        // ==================== GUIDA NOTTURNA ====================
+        function toggleNightMode() {
+            const btn = document.getElementById('nightModeBtn');
+            if (!btn) return;
+            
+            if (nightModeActive) {
+                // Disattiva notte: ripristina layer precedente e rimuovi classe
+                nightModeActive = false;
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fas fa-moon"></i><span>Guida Notturna</span>';
+                // Ripristina il layer che era attivo prima di attivare la notte
+                if (previousLayerName && mapLayers[previousLayerName]) {
+                    setMapLayer(previousLayerName);
+                } else {
+                    // fallback su standard
+                    setMapLayer('standard');
+                }
+                document.body.classList.remove('night-mode');
+                showToast('🌙 Guida Notturna disattivata', 'success');
+            } else {
+                // Attiva notte: salva layer corrente, imposta dark e aggiungi classe
+                nightModeActive = true;
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fas fa-sun"></i><span>Guida Notturna</span>';
+                // Salva il layer corrente prima di cambiare
+                previousLayerName = activeLayerName;
+                // Cambia il layer della mappa in dark (se non è già dark)
+                if (activeLayerName !== 'dark') {
+                    setMapLayer('dark');
+                }
+                // Aggiungi classe night-mode al body
+                document.body.classList.add('night-mode');
+                showToast('🌙 Guida Notturna attivata', 'success');
+            }
+        }
+
+        function applyNavigatorFilter() {
+            if (!navigatorModeActive || !currentPosition) {
+                applyFilters();
+                return;
+            }
+            // Filtra le stazioni in base ai filtri attuali, poi ordina per distanza e prendi le prime 10
+            const tempFiltered = stations.filter(s => {
+                if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true;
+                if (selectedBrands.size > 0 && !selectedBrands.has(s.brand)) return false;
+                if (selectedFuels.size > 0 && !selectedFuels.has(s.fuelType)) return false;
+                if (s.price < currentMinPrice || s.price > currentMaxPrice) return false;
+                if (zoneActive && !isPointInDrawnZone(s.lat, s.lng)) return false;
+                return true;
+            });
+            // Calcola distanza
+            const withDist = tempFiltered.map(s => {
+                const dist = calculateDistance(currentPosition, { lat: s.lat, lng: s.lng });
+                return { ...s, distance: dist };
+            });
+            withDist.sort((a, b) => a.distance - b.distance);
+            const top10 = withDist.slice(0, 10);
+            // Costruisci filteredStations con le stazioni top 10 (inclusi i prezzi delle carte)
+            filteredStations = [];
+            top10.forEach(station => {
+                const brandCardPrices = brandPrices[station.brand] || {};
+                filteredStations.push({ ...station, priceType: 'originale', cardName: 'Prezzo pompa', displayPrice: station.price });
+                Object.keys(brandCardPrices).forEach(card => {
+                    const cardData = brandCardPrices[card];
+                    if (cardData.active && cardData.value !== '' && !isNaN(cardData.value) && parseFloat(cardData.value) > 0) {
+                        let cardPrice;
+                        if (cardData.type === 'sconto') {
+                            cardPrice = station.price - parseFloat(cardData.value);
+                        } else {
+                            cardPrice = parseFloat(cardData.value);
+                        }
+                        let cardName = card;
+                        if (card === 'ALTRO' && cardData.customName) cardName = cardData.customName;
+                        if (cardPrice >= currentMinPrice && cardPrice <= currentMaxPrice) {
+                            filteredStations.push({
+                                ...station,
+                                price: cardPrice,
+                                displayPrice: cardPrice,
+                                priceType: 'carta',
+                                cardName: cardName,
+                                originalPrice: station.price,
+                                cardValue: parseFloat(cardData.value),
+                                cardType: cardData.type
+                            });
+                        }
+                    }
+                });
+            });
+            displayStations();
+            // Aggiorna contatore nella sidebar? Non necessario.
+        }
+
+        function setNavigatorZoom(zoom) {
+            navigatorZoomLevel = zoom;
+            if (map && currentPosition) {
+                map.setView([currentPosition.lat, currentPosition.lng], zoom);
+            }
+            // Aggiorna pulsanti attivi
+            document.querySelectorAll('.nav-zoom-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.zoom) === zoom) btn.classList.add('active');
+            });
+            showToast(`🔍 Zoom impostato a ${zoom}`, 'success');
+        }
+
+        // Sovrascrive displayStations per gestire la modalità navigatore (se attiva, mostra solo top 10)
+        // Ma abbiamo già applyNavigatorFilter che viene chiamata a ogni aggiornamento.
+        // Modifichiamo displayStations per non sovrascrivere il filtro se navigator attivo.
+        // Conserviamo la funzione originale ma la chiamiamo solo se non siamo in navigator.
+        // Invece di sovrascrivere, modifichiamo applyFilters per chiamare applyNavigatorFilter se attivo.
+        // Quindi nell'applyFilters originale, all'inizio controlliamo.
+        // Ma abbiamo già applicato la logica in applyFilters? L'abbiamo modificata per chiamare displayStations.
+        // Per evitare duplicazione, modifichiamo applyFilters per chiamare applyNavigatorFilter se attivo.
+        // Salviamo il riferimento originale.
+        const originalApplyFilters = applyFilters;
+        applyFilters = function() {
+            if (navigatorModeActive && currentPosition) {
+                applyNavigatorFilter();
+            } else {
+                originalApplyFilters();
+            }
+        };
+        // Forza la chiamata su eventi di movimento mappa? Forse non necessario.
+        // Per sicurezza, quando la mappa si muove, se navigator attivo ricalcola le 10 stazioni? Non necessario.
+
+        // ==================== FINE FUNZIONI NAVIGATORE ====================
 
         function displayStations() {
             if (!map) return;
