@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MK_GO_FUEL_SELF</title>
     
-    <!-- Google tag (gtag.js) - caricato solo dopo consenso (vedi script in fondo) -->
+    <!-- Preconnect per i domini dei tile per velocizzare il caricamento -->
+    <link rel="preconnect" href="https://tile.openstreetmap.org">
+    <link rel="preconnect" href="https://server.arcgisonline.com">
+    <link rel="preconnect" href="https://tile.openstreetmap.de">
+    <link rel="preconnect" href="https://services.arcgisonline.com">
+    <link rel="preconnect" href="https://mt1.google.com">
+    <link rel="preconnect" href="https://api.tomtom.com">
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -1301,6 +1307,26 @@
     </div>
 
     <script>
+        // ==================== OTTIMIZZAZIONI PERFORMANCE ====================
+        // Debounce e Throttle per ridurre i ricalcoli
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        function throttle(func, limit) {
+            let inThrottle;
+            return function(...args) {
+                if (!inThrottle) {
+                    func.apply(this, args);
+                    inThrottle = true;
+                    setTimeout(() => inThrottle = false, limit);
+                }
+            };
+        }
+
         // ==================== COOKIE CONSENT MANAGEMENT ====================
         const GA_MEASUREMENT_ID = 'G-F0RENSFPDX';
         let gaLoaded = false;
@@ -1356,7 +1382,6 @@
         }
 
         function resetCookieConsent() {
-            // Se il banner è già visibile, non fare nulla per evitare loop
             if (document.getElementById('cookieBanner').classList.contains('show')) {
                 return;
             }
@@ -1365,7 +1390,6 @@
             location.reload();
         }
 
-        // NUOVA FUNZIONE per aprire le preferenze cookie dal menu (chiude il menu e resetta)
         function openCookiePreferences() {
             hideMenuModal();
             resetCookieConsent();
@@ -1384,7 +1408,6 @@
             }
         }
 
-        // Event listeners per i bottoni del banner
         document.addEventListener('DOMContentLoaded', function() {
             const acceptBtn = document.getElementById('acceptCookiesBtn');
             const declineBtn = document.getElementById('declineCookiesBtn');
@@ -1417,7 +1440,6 @@
             checkAndInitConsent();
         });
         
-        // Funzioni per il modal Privacy
         function showPrivacyModal() {
             document.getElementById('privacyModal').classList.remove('hidden');
         }
@@ -1425,7 +1447,7 @@
             document.getElementById('privacyModal').classList.add('hidden');
         }
         
-        // ==================== GESTIONE MENU E SOTTOMENU ====================
+        // ==================== GESTIONE MENU ====================
         let menuWasOpen = false;
 
         function openMenuModal() {
@@ -1437,7 +1459,6 @@
             menuWasOpen = false;
         }
         
-        // Sovrascrivi le funzioni di apertura modali per ricordare lo stato del menu
         const originalShowReadme = showReadmeModal;
         showReadmeModal = function() {
             if (!document.getElementById('menuModal').classList.contains('hidden')) {
@@ -1482,7 +1503,6 @@
             originalShowSostienimi();
         };
         
-        // Modifica funzioni di hide per riaprire il menu se necessario
         const originalHideReadme = hideReadmeModal;
         hideReadmeModal = function() {
             originalHideReadme();
@@ -1519,8 +1539,7 @@
             }
         };
         
-        // ==================== TUTTO IL CODICE ORIGINALE (INVARIATO) ====================
-        // Configurazione mappa e variabili globali
+        // ==================== VARIABILI GLOBALI ====================
         let map;
         let markerCluster;
         let markers = [];
@@ -1563,32 +1582,27 @@
         let currentBaseLayer = null;
         let activeLayerName = 'standard';
         let highlightedMarkersLayer = null;
-        let tempSearchMarker = null;  // per memorizzare il marker della ricerca
+        let tempSearchMarker = null;
         
-        // Variabili per il layer traffico (Google)
         let trafficLayer = null;
         let isTrafficActive = false;
         
-        // ========== NUOVE VARIABILI PER LA MODALITÀ NAVIGATORE ==========
         let navigatorModeActive = false;
         let navigatorWatchId = null;
-        let navigatorZoomLevel = 13; // default
+        let navigatorZoomLevel = 13;
 
-        // ========== NUOVA VARIABILE PER LA GUIDA NOTTURNA ==========
         let nightModeActive = false;
-        let previousLayerName = 'standard'; // per ripristinare il layer quando si disattiva la notte
+        let previousLayerName = 'standard';
 
-        // ========== NUOVE VARIABILI PER LE MODALITÀ DI DISEGNO ZONA ==========
-        let drawingMode = 'polygon';   // 'polygon', 'circle', 'path'
-        let currentCircle = null;      // cerchio disegnato (L.circle)
-        let currentPath = null;         // polilinea disegnata (L.polyline) - non più utilizzata per path (ora freehand)
-        let pathPoints = [];             // punti del percorso (linea) - ora utilizzati per freehand
-        let tempPathPolyline = null;     // polilinea temporanea durante il disegno
-        let drawingActive = false;       // flag per sapere se siamo in fase di disegno attivo
-        let circleCenter = null;         // centro del cerchio
-        let currentRadiusKm = 5;          // raggio corrente (km)
+        let drawingMode = 'polygon';
+        let currentCircle = null;
+        let currentPath = null;
+        let pathPoints = [];
+        let tempPathPolyline = null;
+        let drawingActive = false;
+        let circleCenter = null;
+        let currentRadiusKm = 5;
         
-        // Variabili specifiche per freehand (modalità path)
         let freehandPoints = [];
         let freehandTempLayer = null;
         let isFreehandDrawing = false;
@@ -1606,10 +1620,10 @@
             TOMTOM_API_KEY: 'fuelMapper_tomtomApiKey',
             TRAFFIC_STATE: 'fuelMapper_trafficState',
             LAYER_PREFERENCES: 'fuelMapper_layerPreferences',
-            LOCATION_PERMISSION_GRANTED: 'fuelMapper_locationPermissionGranted' // Nuova chiave per ricordare il permesso di geolocalizzazione
+            LOCATION_PERMISSION_GRANTED: 'fuelMapper_locationPermissionGranted'
         };
 
-        // ==================== MODIFICA: MAP LAYERS ====================
+        // ==================== MAP LAYERS ====================
         const mapLayers = {
             standard: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -1625,7 +1639,6 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> DE',
                 maxZoom: 18
             }),
-            // Layer Dark di Esri (World Dark Gray Base) - gratuito e senza autenticazione
             dark: L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, HERE, MapmyIndia, and the GIS User Community',
                 maxZoom: 18,
@@ -1637,7 +1650,6 @@
                 maxZoom: 17,
                 crossOrigin: true
             }),
-            // Traffic layers
             wazeTraffic: L.tileLayer('https://waze.lewik.org/traffic/TileServer/traffic/online/{z}/{x}/{y}.png', {
                 attribution: 'Traffic data &copy; <a href="https://www.waze.com/">Waze</a> | Tiles by lewik.org',
                 maxZoom: 18,
@@ -1653,15 +1665,13 @@
                 crossOrigin: true
             })
         };
-        // ==================== FINE MODIFICA ====================
 
-        // Funzioni per la gestione delle preferenze dei layer
+        // ==================== LAYER PREFERENCES ====================
         function loadLayerPreferences() {
             const saved = localStorage.getItem(STORAGE_KEYS.LAYER_PREFERENCES);
             if (saved) {
                 try {
                     const prefs = JSON.parse(saved);
-                    // Applica visibilità ai pulsanti
                     document.getElementById('standardBtn').style.display = prefs.standard ? 'block' : 'none';
                     document.getElementById('satelliteBtn').style.display = prefs.satellite ? 'block' : 'none';
                     document.getElementById('voyagerBtn').style.display = prefs.voyager ? 'block' : 'none';
@@ -1671,7 +1681,6 @@
                     if (prefs.defaultLayer && mapLayers[prefs.defaultLayer]) {
                         activeLayerName = prefs.defaultLayer;
                     }
-                    // Aggiorna i checkbox nella modale quando viene aperta
                 } catch(e) {}
             }
         }
@@ -1687,7 +1696,6 @@
                 defaultLayer: document.getElementById('defaultLayerSelect').value
             };
             localStorage.setItem(STORAGE_KEYS.LAYER_PREFERENCES, JSON.stringify(prefs));
-            // Applica subito
             document.getElementById('standardBtn').style.display = prefs.standard ? 'block' : 'none';
             document.getElementById('satelliteBtn').style.display = prefs.satellite ? 'block' : 'none';
             document.getElementById('voyagerBtn').style.display = prefs.voyager ? 'block' : 'none';
@@ -1727,6 +1735,7 @@
             }
         }
 
+        // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', function() {
             loadSavedConfig();
             loadLayerPreferences();
@@ -1754,17 +1763,14 @@
             setTimeout(() => { 
                 initMap(); 
                 loadDataFromGoogleSheet(); 
-                // MODIFICA: verifica se l'utente ha già concesso il permesso di geolocalizzazione in passato
-                // e se non è stato impostato il flag per saltare la geolocalizzazione (ad esempio dopo reset cookie)
                 const locationPermission = localStorage.getItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED);
                 const skipGeo = sessionStorage.getItem('skip_geolocation_on_load');
                 if (skipGeo) {
                     sessionStorage.removeItem('skip_geolocation_on_load');
                 }
                 if (locationPermission === 'true' && !skipGeo) {
-                    getCurrentLocation(false); // centra la mappa sulla posizione se già autorizzato
+                    getCurrentLocation(false);
                 }
-                // Se non è stato mai concesso o è stato negato, non fare nulla (mappa centrata su default)
             }, 100);
             setTimeout(() => {
                 const plattsToday = document.getElementById('plattsToday');
@@ -1782,7 +1788,6 @@
                         showToast('Chiave TomTom salvata. Per attivare il traffico clicca su "TomTom"', 'success');
                     });
                 }
-                // Ripristina stato traffico
                 const savedTraffic = localStorage.getItem(STORAGE_KEYS.TRAFFIC_STATE);
                 if (savedTraffic === 'active') {
                     setTimeout(() => toggleTrafficLayer(true), 1500);
@@ -1813,7 +1818,6 @@
                 });
             }
             
-            // Inizializza controlli raggio
             const radiusSlider = document.getElementById('radiusSlider');
             const radiusLabel = document.getElementById('radiusValueLabel');
             if (radiusSlider) {
@@ -1824,20 +1828,18 @@
                         if (drawingMode === 'circle' && circleCenter) {
                             updateCircleRadius();
                         }
-                        // Per path (freehand) non c'è buffer, quindi niente.
-                        applyFilters();
+                        debouncedApplyFilters();
                     }
                 });
             }
             setDrawingMode('polygon');
             
-            // Apertura automatica del README all'avvio (dopo caricamento dati)
             setTimeout(() => {
                 showReadmeModal();
             }, 1500);
         });
 
-        // ==================== FUNZIONI PER I NUOVI MODAL ====================
+        // ==================== FUNZIONI MODALI ====================
         function openMenuModal() {
             document.getElementById('menuModal').classList.remove('hidden');
         }
@@ -1877,7 +1879,6 @@
             document.getElementById('sostienimiModal').classList.add('hidden');
         }
 
-        // Funzione helper per chiudere gli altri pannelli (escluso quello specificato)
         function closeOtherPanels(except) {
             const drawContent = document.getElementById('drawZoneContent');
             const drawArrow = document.getElementById('drawZoneArrow');
@@ -1989,30 +1990,21 @@
             }
         }
 
-        // NUOVA FUNZIONE: Imposta i filtri iniziali se non ci sono predefiniti salvati
         function setInitialDefaultSelections() {
-            // Controlla se esistono già predefiniti salvati (brand/fuels o filtri completi)
             const savedBrandsFuels = localStorage.getItem(STORAGE_KEYS.DEFAULT_BRANDS_FUELS);
             const savedFilters = localStorage.getItem(STORAGE_KEYS.DEFAULT_FILTERS);
             
             if (savedBrandsFuels || savedFilters) {
-                // Ci sono già predefiniti, non sovrascrivere
                 return;
             }
             
-            // Nessun predefinito: seleziona tutti i brand e solo "Gasolio"
             if (allBrands.length > 0) {
-                // Seleziona tutti i brand
                 selectedBrands.clear();
                 allBrands.forEach(brand => selectedBrands.add(brand));
-                
-                // Aggiorna i checkbox dei brand nell'box
                 const brandCheckboxes = document.querySelectorAll('#brandCheckboxContainer input[type="checkbox"]');
                 brandCheckboxes.forEach(checkbox => {
                     checkbox.checked = true;
                 });
-                
-                // Aggiorna i tag visivi dei brand
                 const allTags = document.querySelectorAll('.brand-tag');
                 allTags.forEach(tag => {
                     tag.classList.add('selected');
@@ -2020,29 +2012,21 @@
             }
             
             if (allFuels.length > 0) {
-                // Deseleziona tutti i carburanti
                 selectedFuels.clear();
                 const fuelCheckboxes = document.querySelectorAll('#fuelCheckboxContainer input[type="checkbox"]');
                 fuelCheckboxes.forEach(checkbox => {
                     checkbox.checked = false;
                 });
-                
-                // Seleziona solo "Gasolio" (valore esatto, incluso "Gasolio (Self)" se presente)
                 const targetFuel = allFuels.find(f => f === 'Gasolio' || f === 'Gasolio (Self)');
-                const fuelToSelect = targetFuel || 'Gasolio'; // fallback
-                
+                const fuelToSelect = targetFuel || 'Gasolio';
                 fuelCheckboxes.forEach(checkbox => {
                     if (checkbox.value === fuelToSelect) {
                         checkbox.checked = true;
                         selectedFuels.add(checkbox.value);
                     }
                 });
-                
-                // Se non è stato trovato "Gasolio", seleziona il primo carburante? No, meglio lasciare solo Gasolio se esiste.
-                // Se proprio non esiste, nessun carburante selezionato.
             }
             
-            // Aggiorna UI e applica filtri
             updateBrandPriceControls();
             applyFilters();
             showToast('✅ Filtri iniziali: tutti i brand e solo Gasolio', 'success');
@@ -2065,7 +2049,6 @@
             currentBaseLayer = mapLayers[layerName];
             map.addLayer(currentBaseLayer);
             activeLayerName = layerName;
-            // Aggiorna solo i bottoni esistenti
             const buttonIds = {
                 'standard': 'standardBtn',
                 'satellite': 'satelliteBtn',
@@ -2080,7 +2063,6 @@
                     else btn.classList.remove('active');
                 }
             });
-            // Gestione traffico: non è un layer base, quindi non lo gestiamo qui
             let layerDisplayName = '';
             switch(layerName) {
                 case 'standard': layerDisplayName = 'Standard'; break;
@@ -2093,12 +2075,10 @@
             showToast(`🗺️ Mappa ${layerDisplayName} attivata`, 'success');
         }
 
-        // Funzione per attivare/disattivare il layer traffico (Google Traffic)
         function toggleTrafficLayer(skipToggleState = false) {
             if (!map) return;
             
             if (!trafficLayer) {
-                // Crea il layer traffico di Google Maps (gratuito e senza chiave)
                 trafficLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
                     attribution: 'Traffic data &copy; Google',
                     maxZoom: 20,
@@ -2136,13 +2116,22 @@
                     markerZoomAnimation: true,
                     layers: [currentBaseLayer]
                 });
-                markerCluster = L.markerClusterGroup({ maxClusterRadius: 30, disableClusteringAtZoom: 16, spiderfyOnMaxZoom: true, showCoverageOnHover: false, zoomToBoundsOnClick: true });
+                markerCluster = L.markerClusterGroup({ 
+                    maxClusterRadius: 40, 
+                    disableClusteringAtZoom: 16, 
+                    spiderfyOnMaxZoom: true, 
+                    showCoverageOnHover: false, 
+                    zoomToBoundsOnClick: true 
+                });
                 map.addLayer(markerCluster);
                 highlightedMarkersLayer = L.layerGroup().addTo(map);
                 map.on('click', handleMapClickForNewStation);
-                // Non più usato per path: map.on('click', handleMapClickForDrawing);
-                map.on('moveend', function() { if (filteredStations.length > 0) displayStations(); });
-                map.on('zoomend', function() { if (filteredStations.length > 0) displayStations(); });
+                // APPLICAZIONE DEL THROTTLE per ridurre i ricalcoli durante lo zoom/trascinamento
+                const throttledDisplay = throttle(function() { 
+                    if (filteredStations.length > 0) displayStations(); 
+                }, 250);
+                map.on('moveend', throttledDisplay);
+                map.on('zoomend', throttledDisplay);
                 console.log('Mappa inizializzata correttamente con layer: ' + activeLayerName);
             } catch (error) { console.error('Errore inizializzazione mappa:', error); }
         }
@@ -2555,7 +2544,7 @@
         function showConfigModal() {
             if (!isbox) { showToast('Accesso negato - effettuare login box', 'error'); return; }
             updateConfigModal(); updateCustomCardsConfigUI(); updateBrandPriceControls(); 
-            loadLayerPrefsIntoModal(); // carica le preferenze dei layer nella modale
+            loadLayerPrefsIntoModal();
             document.getElementById('configModal').classList.remove('hidden');
             setTimeout(() => initNewStationMap(), 200);
             newStationMapClickEnabled = false; document.getElementById('selectOnMapBtn').classList.remove('active');
@@ -2669,47 +2658,37 @@
 
         function toggleFavoriteMode() { favoriteModeActive = !favoriteModeActive; updateConfigModal(); applyFilters(); showToast(`Modalità preferiti ${favoriteModeActive ? 'attivata' : 'disattivata'}`, 'success'); }
 
-        // ========== NUOVE FUNZIONI PER I PULSANTI SULLA MAPPA ==========
-        // Funzione unificata per attivare uno strumento di disegno dalla mappa
+        // ========== DRAWING ZONE ==========
         function activateDrawingTool(mode) {
-            // Se già attivo e stessa modalità, ferma il disegno
             if (drawingActive && drawingMode === mode) {
                 stopDrawing();
-                // Rimuovi lo stato attivo dai pulsanti
                 document.querySelectorAll('.draw-tool-btn').forEach(btn => btn.classList.remove('active'));
                 showToast(`✋ Disegno interrotto`, 'success');
                 return;
             }
-            // Altrimenti imposta modalità e avvia
             setDrawingMode(mode);
             startDrawingZone();
-            // Aggiorna UI pulsanti mappa
             document.querySelectorAll('.draw-tool-btn').forEach(btn => btn.classList.remove('active'));
             const activeBtn = document.getElementById(`map${mode.charAt(0).toUpperCase() + mode.slice(1)}Btn`);
             if (activeBtn) activeBtn.classList.add('active');
             showToast(`✏️ Modalità ${mode === 'polygon' ? 'Poligono' : mode === 'circle' ? 'Cerchio' : 'Mano libera'} attivata`, 'success');
         }
 
-        // ========== NUOVE FUNZIONI PER IL DISEGNO ZONA (POLIGONO, CERCHIO, MANO LIBERA) ==========
         function setDrawingMode(mode) {
             drawingMode = mode;
-            // Aggiorna UI pulsanti modalità
             document.querySelectorAll('.draw-mode-btn').forEach(btn => {
                 if (btn.getAttribute('data-mode') === mode) btn.classList.add('active');
                 else btn.classList.remove('active');
             });
-            // Mostra/nascondi controllo raggio in base alla modalità
             const radiusControl = document.getElementById('radiusControl');
             if (mode === 'circle') {
                 radiusControl.style.display = 'block';
             } else {
                 radiusControl.style.display = 'none';
             }
-            // Resetta eventuale disegno in corso
             if (drawingActive) {
                 stopDrawing();
             }
-            // Aggiorna istruzioni
             const instructions = document.getElementById('drawInstructions');
             if (mode === 'polygon') {
                 instructions.innerHTML = '<i class="fas fa-info-circle"></i> Poligono: clic per aggiungere punti, doppio clic per chiudere.';
@@ -2742,16 +2721,12 @@
                 showToast('🔘 Cerchio: clicca sulla mappa per posizionare il centro.', 'success');
                 map.on('click', handleMapClickForDrawing);
             } else if (drawingMode === 'path') {
-                // Avvia disegno a mano libera (migliorato per touch)
                 freehandPoints = [];
                 isFreehandDrawing = true;
-                // Disabilita il trascinamento della mappa durante il disegno
                 map.dragging.disable();
-                // Per mobile: impedisce lo scroll della pagina durante il disegno
                 document.body.style.overflow = 'hidden';
                 showToast('✏️ Tieni premuto il dito e disegna l\'area. Rilascia per completare.', 'success');
                 
-                // Rimuovi listener esistenti per sicurezza
                 map.off('mousedown', startFreehand);
                 map.off('mousemove', freehandMove);
                 map.off('mouseup', endFreehand);
@@ -2759,12 +2734,10 @@
                 map.off('touchmove', freehandMove);
                 map.off('touchend', endFreehand);
                 
-                // Aggiungi listener per mouse/touch sulla mappa (con opzione passive: false per touch)
                 map.on('mousedown', startFreehand);
                 map.on('mousemove', freehandMove);
                 map.on('mouseup', endFreehand);
                 
-                // Per i dispositivi touch dobbiamo assicurarci che preventDefault funzioni
                 map.getContainer().addEventListener('touchstart', startFreehand, { passive: false });
                 map.getContainer().addEventListener('touchmove', freehandMove, { passive: false });
                 map.getContainer().addEventListener('touchend', endFreehand);
@@ -2776,10 +2749,8 @@
             const startBtn = document.getElementById('startDrawBtn');
             startBtn.innerHTML = '<i class="fas fa-pencil-alt"></i> Inizia a disegnare';
             startBtn.classList.remove('active');
-            // Rimuovi eventuale classe active dai pulsanti mappa
             document.querySelectorAll('.draw-tool-btn').forEach(btn => btn.classList.remove('active'));
             
-            // Rimuovi listener specifici per modalità
             map.off('click', handleMapClickForDrawing);
             map.off('dblclick', handleMapDblClickForDrawing);
             map.off('mousedown', startFreehand);
@@ -2791,7 +2762,6 @@
             container.removeEventListener('touchmove', freehandMove);
             container.removeEventListener('touchend', endFreehand);
             
-            // Rimuovi layer temporanei
             if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
             if (freehandTempLayer) { map.removeLayer(freehandTempLayer); freehandTempLayer = null; }
             tempPoints = [];
@@ -2802,13 +2772,11 @@
             document.body.style.overflow = '';
         }
 
-        // Gestori per freehand (ottimizzati per touch) - MODIFICATI PER MIGLIORE TOUCH
         let lastFreehandPointTime = 0;
-        const MIN_DISTANCE_BETWEEN_POINTS = 5; // metri
+        const MIN_DISTANCE_BETWEEN_POINTS = 5;
         
         function startFreehand(e) {
             if (!drawingActive || drawingMode !== 'path') return;
-            // Previeni comportamento di default (scroll, zoom) solo se è touch
             if (e.cancelable) {
                 e.preventDefault();
             }
@@ -2817,7 +2785,6 @@
             if (freehandTempLayer) map.removeLayer(freehandTempLayer);
             freehandTempLayer = L.polyline([], { color: '#FF6600', weight: 4, opacity: 0.9, smoothFactor: 1 }).addTo(map);
             
-            // Ottieni coordinate corrette da evento mouse o touch
             let latlng;
             if (e.touches) {
                 latlng = map.mouseEventToLatLng(e.touches[0]);
@@ -2833,7 +2800,6 @@
 
         function freehandMove(e) {
             if (!freehandMouseDown || !drawingActive || drawingMode !== 'path') return;
-            // Previeni comportamento di default per evitare lo scroll della pagina
             if (e.cancelable) {
                 e.preventDefault();
             }
@@ -2846,15 +2812,13 @@
             }
             if (!latlng) return;
             
-            // Throttling semplice: evita di aggiungere punti troppo frequentemente (ogni 30ms)
             const now = Date.now();
             if (now - lastFreehandPointTime < 30) return;
             lastFreehandPointTime = now;
             
-            // Aggiungi punto solo se la distanza dall'ultimo è significativa (evita punti duplicati)
             if (freehandPoints.length > 0) {
                 const last = freehandPoints[freehandPoints.length - 1];
-                const dist = calculateDistance({lat: last[0], lng: last[1]}, {lat: latlng.lat, lng: latlng.lng}) * 1000; // in metri
+                const dist = calculateDistance({lat: last[0], lng: last[1]}, {lat: latlng.lat, lng: latlng.lng}) * 1000;
                 if (dist < MIN_DISTANCE_BETWEEN_POINTS) return;
             }
             
@@ -2878,14 +2842,12 @@
                 return;
             }
             
-            // Chiudi il poligono (assicura che primo e ultimo punto coincidano)
             const first = freehandPoints[0];
             const last = freehandPoints[freehandPoints.length-1];
             if (first[0] !== last[0] || first[1] !== last[1]) {
                 freehandPoints.push([first[0], first[1]]);
             }
             
-            // Crea poligono
             if (drawnPolygon) map.removeLayer(drawnPolygon);
             drawnPolygon = L.polygon(freehandPoints, {
                 color: '#0066B3',
@@ -2900,7 +2862,7 @@
             
             zoneActive = true;
             drawingActive = false;
-            stopDrawing(); // rimuove listener e riabilita dragging
+            stopDrawing();
             updateZoneStats();
             applyFilters();
             showToast('✅ Area disegnata e chiusa automaticamente!', 'success');
@@ -3024,7 +2986,6 @@
             if (!zoneActive) return true;
             if ((drawingMode === 'polygon' || drawingMode === 'path') && drawnPolygon && drawnPolygon instanceof L.Polygon) {
                 try {
-                    // Per freehand abbiamo un L.Polygon, stesso controllo
                     return drawnPolygon.getBounds().contains([lat, lng]) && pointInPolygon([lng, lat], drawnPolygon.getLatLngs()[0]);
                 } catch(e) {
                     return drawnPolygon.getBounds().contains([lat, lng]);
@@ -3037,7 +2998,6 @@
             return true;
         }
 
-        // Funzione pointInPolygon (ray casting)
         function pointInPolygon(point, vs) {
             const x = point[0], y = point[1];
             let inside = false;
@@ -3063,8 +3023,7 @@
             return Math.abs(area * R * R / 2 * Math.PI / 180) / 100;
         }
 
-        // Fine nuove funzioni zona
-
+        // ==================== DATA LOAD ====================
         function loadDataFromGoogleSheet() {
             showLoading();
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbw_zwZsyeQfpOVyb53X7Hv41Fl4lKzAG2E08rLbhkE53aDBfiG2jIEo53wVQKFwdc6psA/exec';
@@ -3133,7 +3092,6 @@
                             showToast(`✅ Dati caricati: ${stations.length} stazioni`, 'success');
                             applyDefaultFilters();
                             applyDefaultBrandsAndFuels();
-                            // MODIFICA: Dopo aver applicato i default, se non c'erano, imposta i filtri iniziali
                             setInitialDefaultSelections();
                         } else {
                             throw new Error('Nessuna stazione valida trovata');
@@ -3176,42 +3134,35 @@
             showToast('📋 Dati di esempio caricati', 'success');
             applyDefaultFilters();
             applyDefaultBrandsAndFuels();
-            // MODIFICA: Dopo i dati di esempio, imposta i filtri iniziali
             setInitialDefaultSelections();
         }
 
-        // FUNZIONE MIGLIORATA CON CONTROLLO PERMESSI E PERSISTENZA
+        // ==================== GEOLOCATION ====================
         function getCurrentLocation(showMessageOnError = true) {
             if (!navigator.geolocation) {
                 if (showMessageOnError) showToast('❌ Geolocalizzazione non supportata dal browser', 'error');
                 return;
             }
             
-            // Verifica lo stato del permesso (se l'API Permissions è disponibile)
             if (navigator.permissions) {
                 navigator.permissions.query({name:'geolocation'}).then(permissionStatus => {
                     if (permissionStatus.state === 'denied') {
-                        // Salva che il permesso è stato negato per non riprovare automaticamente
                         localStorage.setItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED, 'false');
                         if (showMessageOnError) {
                             showToast('⚠️ Permesso di geolocalizzazione negato. Per attivarlo, vai nelle impostazioni del browser.', 'error');
                         }
                         return;
                     } else {
-                        // Permesso 'prompt' o 'granted': procedi con la richiesta
                         requestGeolocation(showMessageOnError);
                     }
                 }).catch(() => {
-                    // Se l'API Permissions fallisce, procedi comunque con la richiesta
                     requestGeolocation(showMessageOnError);
                 });
             } else {
-                // Browser non supporta Permissions API, procedi direttamente
                 requestGeolocation(showMessageOnError);
             }
         }
         
-        // Funzione interna per effettuare la richiesta di geolocalizzazione
         function requestGeolocation(showMessageOnError) {
             if (showMessageOnError) showToast('📍 Richiesta posizione in corso...', 'success');
             const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
@@ -3230,7 +3181,6 @@
                     }).addTo(map);
                     currentLocationMarker.bindPopup('La tua posizione').openPopup();
                     showToast('✅ Posizione aggiornata!', 'success');
-                    // SALVA IL PERMESSO COME CONCESSO
                     localStorage.setItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED, 'true');
                     displayStations();
                 },
@@ -3240,7 +3190,6 @@
                     switch(error.code) {
                         case error.PERMISSION_DENIED:
                             errorMessage = 'Permesso negato. Vai nelle impostazioni del browser e autorizza la posizione.';
-                            // SALVA CHE IL PERMESSO È STATO NEGATO
                             localStorage.setItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED, 'false');
                             break;
                         case error.POSITION_UNAVAILABLE:
@@ -3264,6 +3213,7 @@
             );
         }
 
+        // ==================== ROUTE ====================
         function toggleStartInput() { const startType = document.querySelector('input[name="startType"]:checked').value; const startInput = document.getElementById('startInput'); startInput.style.display = startType === 'custom' ? 'block' : 'none'; }
         function toggleWaypointInput() { const enabled = document.getElementById('enableWaypoint').checked; const waypointInput = document.getElementById('waypointInput'); waypointInput.disabled = !enabled; if (!enabled) { waypointInput.value = ''; document.getElementById('waypointSuggestions').style.display = 'none'; } }
 
@@ -3444,6 +3394,7 @@
 
         function updateCardPrice(brand, card, value) { if (brandPrices[brand] && brandPrices[brand][card]) { const numValue = value === '' ? '' : parseFloat(value); brandPrices[brand][card].value = numValue; applyFilters(); showToast(`💰 Prezzo aggiornato per ${brand} - ${card}`, 'success'); } }
 
+        // ==================== PRICE RANGE SLIDER ====================
         function initPriceRangeSlider() {
             const minHandle = document.getElementById('minHandle');
             const maxHandle = document.getElementById('maxHandle');
@@ -3466,6 +3417,9 @@
                 document.getElementById('maxPriceLabel').innerText = currentMaxPrice.toFixed(3);
             };
             
+            // USO DEBOUNCE per i movimenti dello slider per ridurre i ricalcoli
+            const debouncedApply = debounce(() => { applyFilters(); }, 150);
+            
             const onMouseMoveMin = (e) => {
                 if (!isDraggingMin) return;
                 const rect = track.getBoundingClientRect();
@@ -3476,7 +3430,7 @@
                 newValue = Math.max(newValue, globalMinPrice);
                 currentMinPrice = parseFloat(newValue.toFixed(3));
                 updateSlider();
-                applyFilters();
+                debouncedApply();
             };
             
             const onMouseMoveMax = (e) => {
@@ -3489,7 +3443,7 @@
                 newValue = Math.min(newValue, globalMaxPrice);
                 currentMaxPrice = parseFloat(newValue.toFixed(3));
                 updateSlider();
-                applyFilters();
+                debouncedApply();
             };
             
             const onMouseUp = () => {
@@ -3528,7 +3482,7 @@
                     newValue = Math.max(newValue, globalMinPrice);
                     currentMinPrice = parseFloat(newValue.toFixed(3));
                     updateSlider();
-                    applyFilters();
+                    debouncedApply();
                 };
                 const onTouchEnd = () => {
                     isDraggingMin = false;
@@ -3553,7 +3507,7 @@
                     newValue = Math.min(newValue, globalMaxPrice);
                     currentMaxPrice = parseFloat(newValue.toFixed(3));
                     updateSlider();
-                    applyFilters();
+                    debouncedApply();
                 };
                 const onTouchEnd = () => {
                     isDraggingMax = false;
@@ -3581,6 +3535,12 @@
             document.getElementById('minPriceLabel').innerText = currentMinPrice.toFixed(3);
             document.getElementById('maxPriceLabel').innerText = currentMaxPrice.toFixed(3);
         }
+
+        // ==================== FILTERS ====================
+        // Versione debounced di applyFilters per gli slider
+        const debouncedApplyFilters = debounce(function() {
+            applyFilters();
+        }, 200);
 
         function applyFilters() {
             const minPrice = currentMinPrice;
@@ -3649,12 +3609,11 @@
 
         function refreshMap() { displayStations(); showToast('🗺️ Mappa aggiornata', 'success'); }
 
-        // ==================== FUNZIONI PER LA MODALITÀ NAVIGATORE ====================
+        // ==================== NAVIGATOR MODE ====================
         function toggleNavigatorMode() {
             const btn = document.getElementById('navigatorBtn');
             const nightBtn = document.getElementById('nightModeBtn');
             if (navigatorModeActive) {
-                // Disattiva
                 navigatorModeActive = false;
                 if (navigatorWatchId) {
                     navigator.geolocation.clearWatch(navigatorWatchId);
@@ -3662,23 +3621,17 @@
                 }
                 btn.classList.remove('nav-active');
                 document.getElementById('navZoomControls').classList.add('hidden');
-                // Nascondi il pulsante Guida Notturna
                 nightBtn.style.display = 'none';
-                // Se la notte era attiva, disattivala
                 if (nightModeActive) {
-                    toggleNightMode(); // disattiva
+                    toggleNightMode();
                 }
                 showToast('🛑 Modalità Navigatore disattivata', 'success');
-                // Rimuovi marker di posizione? Lasciamo il marker statico.
-                // Non forziamo il refresh della mappa, manteniamo i marker.
-                applyFilters(); // riapplica filtri per mostrare tutti i marker
+                applyFilters();
             } else {
-                // Attiva
                 if (!navigator.geolocation) {
                     showToast('❌ Geolocalizzazione non supportata', 'error');
                     return;
                 }
-                // Richiedi posizione e avvia watch
                 navigator.geolocation.getCurrentPosition(
                     function(pos) {
                         currentPosition = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -3692,9 +3645,6 @@
                                 popupAnchor: [0, -16] 
                             }) 
                         }).addTo(map);
-                        // Non viene aggiunto alcun popup automatico
-                        
-                        // Avvia watch
                         if (navigatorWatchId) navigator.geolocation.clearWatch(navigatorWatchId);
                         navigatorWatchId = navigator.geolocation.watchPosition(
                             function(pos) {
@@ -3703,7 +3653,6 @@
                                 if (currentLocationMarker) {
                                     currentLocationMarker.setLatLng([currentPosition.lat, currentPosition.lng]);
                                 }
-                                // Filtra le stazioni per mostrare solo le 10 più vicine
                                 applyNavigatorFilter();
                             },
                             function(err) {
@@ -3711,11 +3660,9 @@
                             },
                             { enableHighAccuracy: true, timeout: 30000, maximumAge: 10000 }
                         );
-                        
                         navigatorModeActive = true;
                         btn.classList.add('nav-active');
                         document.getElementById('navZoomControls').classList.remove('hidden');
-                        // Mostra il pulsante Guida Notturna
                         nightBtn.style.display = 'flex';
                         showToast('📍 Modalità Navigatore attivata. Mostro le 10 stazioni più vicine.', 'success');
                         applyNavigatorFilter();
@@ -3728,37 +3675,29 @@
             }
         }
 
-        // ==================== GUIDA NOTTURNA ====================
         function toggleNightMode() {
             const btn = document.getElementById('nightModeBtn');
             if (!btn) return;
             
             if (nightModeActive) {
-                // Disattiva notte: ripristina layer precedente e rimuovi classe
                 nightModeActive = false;
                 btn.classList.remove('active');
                 btn.innerHTML = '<i class="fas fa-moon"></i><span>Guida Notturna</span>';
-                // Ripristina il layer che era attivo prima di attivare la notte
                 if (previousLayerName && mapLayers[previousLayerName]) {
                     setMapLayer(previousLayerName);
                 } else {
-                    // fallback su standard
                     setMapLayer('standard');
                 }
                 document.body.classList.remove('night-mode');
                 showToast('🌙 Guida Notturna disattivata', 'success');
             } else {
-                // Attiva notte: salva layer corrente, imposta dark e aggiungi classe
                 nightModeActive = true;
                 btn.classList.add('active');
                 btn.innerHTML = '<i class="fas fa-sun"></i><span>Guida Notturna</span>';
-                // Salva il layer corrente prima di cambiare
                 previousLayerName = activeLayerName;
-                // Cambia il layer della mappa in dark (se non è già dark)
                 if (activeLayerName !== 'dark') {
                     setMapLayer('dark');
                 }
-                // Aggiungi classe night-mode al body
                 document.body.classList.add('night-mode');
                 showToast('🌙 Guida Notturna attivata', 'success');
             }
@@ -3769,7 +3708,6 @@
                 applyFilters();
                 return;
             }
-            // Filtra le stazioni in base ai filtri attuali, poi ordina per distanza e prendi le prime 10
             const tempFiltered = stations.filter(s => {
                 if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true;
                 if (selectedBrands.size > 0 && !selectedBrands.has(s.brand)) return false;
@@ -3778,14 +3716,12 @@
                 if (zoneActive && !isPointInDrawnZone(s.lat, s.lng)) return false;
                 return true;
             });
-            // Calcola distanza
             const withDist = tempFiltered.map(s => {
                 const dist = calculateDistance(currentPosition, { lat: s.lat, lng: s.lng });
                 return { ...s, distance: dist };
             });
             withDist.sort((a, b) => a.distance - b.distance);
             const top10 = withDist.slice(0, 10);
-            // Costruisci filteredStations con le stazioni top 10 (inclusi i prezzi delle carte)
             filteredStations = [];
             top10.forEach(station => {
                 const brandCardPrices = brandPrices[station.brand] || {};
@@ -3817,7 +3753,6 @@
                 });
             });
             displayStations();
-            // Aggiorna contatore nella sidebar? Non necessario.
         }
 
         function setNavigatorZoom(zoom) {
@@ -3825,7 +3760,6 @@
             if (map && currentPosition) {
                 map.setView([currentPosition.lat, currentPosition.lng], zoom);
             }
-            // Aggiorna pulsanti attivi
             document.querySelectorAll('.nav-zoom-btn').forEach(btn => {
                 btn.classList.remove('active');
                 if (parseInt(btn.dataset.zoom) === zoom) btn.classList.add('active');
@@ -3833,15 +3767,7 @@
             showToast(`🔍 Zoom impostato a ${zoom}`, 'success');
         }
 
-        // Sovrascrive displayStations per gestire la modalità navigatore (se attiva, mostra solo top 10)
-        // Ma abbiamo già applyNavigatorFilter che viene chiamata a ogni aggiornamento.
-        // Modifichiamo displayStations per non sovrascrivere il filtro se navigator attivo.
-        // Conserviamo la funzione originale ma la chiamiamo solo se non siamo in navigator.
-        // Invece di sovrascrivere, modifichiamo applyFilters per chiamare applyNavigatorFilter se attivo.
-        // Quindi nell'applyFilters originale, all'inizio controlliamo.
-        // Ma abbiamo già applicato la logica in applyFilters? L'abbiamo modificata per chiamare displayStations.
-        // Per evitare duplicazione, modifichiamo applyFilters per chiamare applyNavigatorFilter se attivo.
-        // Salviamo il riferimento originale.
+        // Sovrascrivi applyFilters per gestire il navigatore
         const originalApplyFilters = applyFilters;
         applyFilters = function() {
             if (navigatorModeActive && currentPosition) {
@@ -3850,11 +3776,8 @@
                 originalApplyFilters();
             }
         };
-        // Forza la chiamata su eventi di movimento mappa? Forse non necessario.
-        // Per sicurezza, quando la mappa si muove, se navigator attivo ricalcola le 10 stazioni? Non necessario.
 
-        // ==================== FINE FUNZIONI NAVIGATORE ====================
-
+        // ==================== DISPLAY STATIONS ====================
         function displayStations() {
             if (!map) return;
             markerCluster.clearLayers();
@@ -4037,9 +3960,7 @@
             L.popup({ maxWidth: 320, minWidth: 280, className: 'custom-popup' }).setLatLng([station.lat, station.lng]).setContent(popupContent).openOn(map);
         }
         
-        // FUNZIONE CORRETTA: copia solo per i carburanti selezionati nei filtri
         function copyStationInfoByKey(stationKey) {
-            // Trova tutte le stazioni con le stesse coordinate (impianto unico)
             const [lat, lng] = stationKey.split(',').map(Number);
             const stationGroup = stations.filter(s => Math.abs(s.lat - lat) < 0.0001 && Math.abs(s.lng - lng) < 0.0001);
             if (stationGroup.length === 0) {
@@ -4047,20 +3968,17 @@
                 return;
             }
             
-            // Filtra solo i carburanti selezionati
             const fuelsOfInterest = stationGroup.filter(s => selectedFuels.has(s.fuelType));
             if (fuelsOfInterest.length === 0) {
                 showToast('⚠️ Nessun carburante selezionato per questa stazione', 'error');
                 return;
             }
             
-            // Per ogni stazione valida, calcola le varianti di prezzo (originale + carte attive)
             const variants = [];
             const minPrice = currentMinPrice;
             const maxPrice = currentMaxPrice;
             
             fuelsOfInterest.forEach(station => {
-                // Prezzo originale
                 if (station.price >= minPrice && station.price <= maxPrice) {
                     variants.push({
                         fuel: station.fuelType,
@@ -4070,7 +3988,6 @@
                     });
                 }
                 
-                // Carte attive per questo brand
                 const brandCardPrices = brandPrices[station.brand] || {};
                 Object.keys(brandCardPrices).forEach(card => {
                     const cardData = brandCardPrices[card];
@@ -4100,7 +4017,6 @@
                 return;
             }
             
-            // Trova il miglior prezzo tra i carburanti selezionati
             const bestVariant = variants.reduce((min, v) => v.price < min.price ? v : min, variants[0]);
             const cheapestCardName = bestVariant.name;
             const cheapestCardPrice = bestVariant.price;
@@ -4174,19 +4090,16 @@
                 if (waypointEnabled && waypointCoord) { document.getElementById('waypointText').textContent = waypointInput.value; waypointContainer.style.display = 'flex'; } else waypointContainer.style.display = 'none';
                 document.getElementById('routeDistance').textContent = routeDistance.toFixed(1); document.getElementById('routeDuration').textContent = routeDuration; document.getElementById('deviationValue').textContent = deviation; document.getElementById('deviationSlider').value = deviation;
                 document.getElementById('routePanel').classList.remove('hidden');
-                // Mostra il pulsante sulla mappa
                 document.getElementById('closeRouteMapContainer').style.display = 'block';
                 findStationsAlongRoute();
             } catch (error) { 
                 console.error('Errore nel calcolo del percorso:', error); 
-                // MODIFICA: mostra il modale di errore personalizzato invece dell'alert
                 showGeolocationErrorModal(); 
             } finally { 
                 hideLoading(); 
             }
         }
 
-        // ==================== NUOVE FUNZIONI PER IL MODALE DI ERRORE ====================
         function showGeolocationErrorModal() {
             document.getElementById('geolocationErrorModal').classList.remove('hidden');
         }
@@ -4222,7 +4135,6 @@
             if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; } 
             filteredStations = [...stations]; 
             displayStations(); 
-            // Nascondi il pulsante sulla mappa
             document.getElementById('closeRouteMapContainer').style.display = 'none';
         }
         function showboxModal() { document.getElementById('boxModal').classList.remove('hidden'); }
