@@ -3026,7 +3026,7 @@
         // ==================== DATA LOAD ====================
         function loadDataFromGoogleSheet() {
             showLoading();
-            const scriptUrl = 'https://script.google.com/macros/s/AKfycbw_zwZsyeQfpOVyb53X7Hv41Fl4lKzAG2E08rLbhkE53aDBfiG2jIEo53wVQKFwdc6psA/exec';
+            const scriptUrl = 'https://mkboxself.github.io/fuel-data/stations.json';
             fetch(scriptUrl)
                 .then(response => {
                     if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
