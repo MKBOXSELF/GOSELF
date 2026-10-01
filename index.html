@@ -289,9 +289,52 @@
         .btn-secondary:hover { background: #d0d0d0; }
         .btn-close { background: transparent; border: none; color: white; cursor: pointer; font-size: 14px; }
         .hidden { display: none !important; }
-        .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 4000; }
+        .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 4000; flex-direction: column; gap: 15px; }
         .spinner { width: 40px; height: 40px; border: 4px solid var(--light-gray); border-top: 4px solid var(--primary-blue); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* ===== NUOVI STILI PER PROGRESS BAR CARICAMENTO ===== */
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 26px 34px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+            min-width: 280px;
+            max-width: 90vw;
+        }
+        .loading-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-blue);
+            text-align: center;
+            min-height: 18px;
+        }
+        .loading-progress-container {
+            width: 100%;
+            height: 8px;
+            background: var(--light-gray);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .loading-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+            border-radius: 4px;
+            transition: width 0.35s ease;
+            box-shadow: 0 0 8px rgba(0,102,179,0.5);
+        }
+        .loading-percent {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+        }
         .toast { position: fixed; top: 50px; right: 15px; background: white; padding: 10px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 5000; display: flex; align-items: center; gap: 8px; animation: slideIn 0.3s; max-width: 90%; font-size: 12px; }
         .toast-success { border-left: 4px solid var(--success-green); }
         .toast-error { border-left: 4px solid #dc3545; }
@@ -830,6 +873,23 @@
         body.night-mode .menu-item i {
             color: #88ccff;
         }
+        /* ===== NIGHT MODE per il loading overlay ===== */
+        body.night-mode .loading-overlay {
+            background: rgba(20,20,30,0.95);
+        }
+        body.night-mode .loading-content {
+            background: #1e1e2f;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+        }
+        body.night-mode .loading-text {
+            color: #88ccff;
+        }
+        body.night-mode .loading-progress-container {
+            background: #2a2a3d;
+        }
+        body.night-mode .loading-percent {
+            color: #88ccff;
+        }
     </style>
 </head>
 <body>
@@ -1288,7 +1348,17 @@
                 </div>
             </div>
         </div>
-        <div class="loading-overlay hidden" id="loadingOverlay"><div class="spinner"></div></div>
+        <!-- MODIFICA: Loading overlay con progress bar e percentuale -->
+        <div class="loading-overlay hidden" id="loadingOverlay">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <div class="loading-text" id="loadingText">Inizializzazione in corso...</div>
+                <div class="loading-progress-container">
+                    <div class="loading-progress-bar" id="loadingProgressBar"></div>
+                </div>
+                <div class="loading-percent" id="loadingPercent">0%</div>
+            </div>
+        </div>
     </div>
 
     <!-- Cookie Banner HTML -->
@@ -1608,6 +1678,10 @@
         let isFreehandDrawing = false;
         let freehandMouseDown = false;
         
+        // ===== VARIABILI GLOBALI PER IL PROGRESSO DI CARICAMENTO =====
+        let loadingProgressValue = 0;
+        let loadingProgressInterval = null;
+        
         const STORAGE_KEYS = {
             FAVORITES: 'fuelMapper_favorites',
             FAVORITE_MODE: 'fuelMapper_favoriteMode',
@@ -1761,7 +1835,10 @@
                 updateCustomCardsConfigUI();
             }
             setTimeout(() => { 
+                showLoading('Inizializzazione mappa...');
+                updateLoadingProgress(10, 'Inizializzazione mappa...');
                 initMap(); 
+                updateLoadingProgress(20, 'Connessione al server dati...');
                 loadDataFromGoogleSheet(); 
                 const locationPermission = localStorage.getItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED);
                 const skipGeo = sessionStorage.getItem('skip_geolocation_on_load');
@@ -3024,16 +3101,32 @@
         }
 
         // ==================== DATA LOAD ====================
+        // ===== FUNZIONE MODIFICATA: gestisce progressivamente il caricamento =====
         function loadDataFromGoogleSheet() {
-            showLoading();
-            const scriptUrl = 'https://mkboxself.github.io/fuel-data/stations.json';
+            showLoading('Connessione al server in corso...');
+            updateLoadingProgress(20, 'Connessione al server in corso...');
+            
+            // Animazione "soft" del progresso mentre attendiamo la risposta del server
+            let softProgress = 20;
+            if (loadingProgressInterval) clearInterval(loadingProgressInterval);
+            loadingProgressInterval = setInterval(() => {
+                if (softProgress < 45) {
+                    softProgress += 1;
+                    updateLoadingProgress(softProgress, 'Download prezzi "https://carburanti.mise.gov.it/"  in corso....');
+                }
+            }, 220);
+            
+            const scriptUrl = 'https://script.google.com/macros/s/AKfycbw_zwZsyeQfpOVyb53X7Hv41Fl4lKzAG2E08rLbhkE53aDBfiG2jIEo53wVQKFwdc6psA/exec';
             fetch(scriptUrl)
                 .then(response => {
+                    if (loadingProgressInterval) { clearInterval(loadingProgressInterval); loadingProgressInterval = null; }
+                    updateLoadingProgress(50, 'Risposta ricevuta dal server...');
                     if (!response.ok) throw new Error(`Errore HTTP: ${response.status}`);
                     return response.json();
                 })
                 .then(data => {
                     if (data && Array.isArray(data) && data.length > 0) {
+                        updateLoadingProgress(65, 'Elaborazione dati ricevuti...');
                         const newStations = [];
                         data.forEach((row) => {
                             const getField = (possibleNames) => {
@@ -3084,11 +3177,14 @@
                             filteredStations = [...stations];
                             lastUpdate = new Date();
                             updateLastUpdateText();
+                            updateLoadingProgress(80, 'Aggiornamento filtri e opzioni...');
                             updateFilterOptions();
                             updateboxStats();
                             updatePriceRange();
                             updateConfigModal();
+                            updateLoadingProgress(92, 'Visualizzazione sulla mappa...');
                             displayStations();
+                            updateLoadingProgress(100, 'Completato!');
                             showToast(`✅ Dati caricati: ${stations.length} stazioni`, 'success');
                             applyDefaultFilters();
                             applyDefaultBrandsAndFuels();
@@ -3101,14 +3197,20 @@
                     }
                 })
                 .catch(error => {
+                    if (loadingProgressInterval) { clearInterval(loadingProgressInterval); loadingProgressInterval = null; }
                     console.error('Errore nel caricamento da Google Apps Script:', error);
+                    updateLoadingProgress(70, 'Errore: carico dati di esempio...');
                     showToast('⚠️ Errore nel caricamento dei dati. Caricamento dati di esempio...', 'error');
-                    setTimeout(() => loadSampleData(), 1000);
+                    setTimeout(() => loadSampleData(), 800);
                 })
-                .finally(() => hideLoading());
+                .finally(() => {
+                    // hideLoading dopo un breve delay per mostrare il 100%
+                    setTimeout(() => hideLoading(), 400);
+                });
         }
 
         function loadSampleData() {
+            updateLoadingProgress(80, 'Caricamento dati di esempio...');
             stations = [
                 { brand: "Q8", name: "Q8 CORSO TASSONI", address: "CORSO TASSONI 2", city: "TORINO", province: "TO", lat: 45.07688, lng: 7.65646, fuelType: "Gasolio", price: 1.779, lastUpdate: "2026-03-02", diff: -7, description: "€ 1.779 (€ -0.007) 02/03/2026" },
                 { brand: "Q8", name: "Q8 di Ferracci Gaspare", address: "VIALE SASSARI SNC", city: "MONTI", province: "SS", lat: 40.80959, lng: 9.32420, fuelType: "Gasolio", price: 1.779, lastUpdate: "2026-03-02", diff: -7, description: "€ 1.779 (€ -0.007) 02/03/2026" },
@@ -3130,7 +3232,12 @@
             stations.push({ brand: "Eni", name: "Eni Station", address: "Via Roma 1", city: "Roma", province: "RM", lat: 41.9028, lng: 12.4964, fuelType: "GPL", price: 0.789, lastUpdate: "2026-03-02", diff: 0, description: "GPL" });
             stations.push({ brand: "Tamoil", name: "Tamoil", address: "Via Nazionale", city: "Firenze", province: "FI", lat: 43.7696, lng: 11.2558, fuelType: "Metano", price: 1.299, lastUpdate: "2026-03-02", diff: 0, description: "Metano" });
             lastUpdate = new Date(); updateLastUpdateText(); updateFilterOptions(); updateboxStats(); updateConfigModal(); filteredStations = [...stations];
-            setTimeout(() => { updatePriceRange(); displayStations(); }, 500);
+            updateLoadingProgress(95, 'Visualizzazione dati di esempio...');
+            setTimeout(() => { 
+                updatePriceRange(); 
+                displayStations(); 
+                updateLoadingProgress(100, 'Completato!');
+            }, 500);
             showToast('📋 Dati di esempio caricati', 'success');
             applyDefaultFilters();
             applyDefaultBrandsAndFuels();
@@ -4069,17 +4176,19 @@
             if (!endInput.value) { alert('Inserisci una destinazione'); return; }
             if (startType === 'custom' && !startInput.value) { alert('Inserisci un indirizzo di partenza'); return; }
             if (waypointEnabled && !waypointInput.value) { alert('Inserisci un indirizzo per la tappa intermedia o disabilita l\'opzione'); return; }
-            hideRouteModal(); showLoading();
+            hideRouteModal(); showLoading('Calcolo percorso in corso...'); updateLoadingProgress(30, 'Ricerca indirizzi...');
             try {
                 let startCoord = null, endCoord = null, waypointCoord = null;
                 if (startType === 'current' && currentPosition) startCoord = currentPosition;
                 else { const startQuery = startInput.value; const startResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(startQuery)}&limit=1&countrycodes=it`); const startData = await startResponse.json(); if (startData.length > 0) startCoord = { lat: parseFloat(startData[0].lat), lng: parseFloat(startData[0].lon) }; }
                 if (waypointEnabled) { const waypointQuery = waypointInput.value; const waypointResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(waypointQuery)}&limit=1&countrycodes=it`); const waypointData = await waypointResponse.json(); if (waypointData.length > 0) waypointCoord = { lat: parseFloat(waypointData[0].lat), lng: parseFloat(waypointData[0].lon) }; }
                 const endQuery = endInput.value; const endResponse = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(endQuery)}&limit=1&countrycodes=it`); const endData = await endResponse.json(); if (endData.length > 0) endCoord = { lat: parseFloat(endData[0].lat), lng: parseFloat(endData[0].lon) };
+                updateLoadingProgress(60, 'Calcolo itinerario...');
                 if (!startCoord || !endCoord) throw new Error('Impossibile trovare le coordinate per gli indirizzi inseriti');
                 if (waypointEnabled && !waypointCoord) throw new Error('Impossibile trovare le coordinate per la tappa intermedia');
                 startPoint = startCoord; endPoint = endCoord; waypointPoint = waypointCoord;
                 const route = await getRoute(startCoord.lat, startCoord.lng, endCoord.lat, endCoord.lng, waypointCoord ? waypointCoord.lat : null, waypointCoord ? waypointCoord.lng : null);
+                updateLoadingProgress(85, 'Visualizzazione percorso...');
                 routePoints = route.points; routeDistance = route.distance; routeDuration = route.duration;
                 if (routePolyline) map.removeLayer(routePolyline);
                 routePolyline = L.polyline(routePoints, { color: '#0066B3', weight: 5, opacity: 0.7 }).addTo(map);
@@ -4092,11 +4201,12 @@
                 document.getElementById('routePanel').classList.remove('hidden');
                 document.getElementById('closeRouteMapContainer').style.display = 'block';
                 findStationsAlongRoute();
+                updateLoadingProgress(100, 'Completato!');
             } catch (error) { 
                 console.error('Errore nel calcolo del percorso:', error); 
                 showGeolocationErrorModal(); 
             } finally { 
-                hideLoading(); 
+                setTimeout(() => hideLoading(), 400); 
             }
         }
 
@@ -4142,11 +4252,56 @@
         function showboxDashboard() { updateboxStats(); document.getElementById('boxDashboardModal').classList.remove('hidden'); }
         function hideboxDashboard() { document.getElementById('boxDashboardModal').classList.add('hidden'); }
         function updateboxStats() { document.getElementById('totalStations').textContent = stations.length; const brands = new Set(stations.map(s => s.brand)); document.getElementById('totalBrands').textContent = brands.size; const fuelTypes = new Set(stations.map(s => s.fuelType)); document.getElementById('totalFuelTypes').textContent = fuelTypes.size; const avgPrice = stations.reduce((sum, s) => sum + s.price, 0) / stations.length; document.getElementById('avgPrice').textContent = '€' + avgPrice.toFixed(3); }
-        function importExcelFile(input) { const file = input.files[0]; if (!file) return; showLoading(); const reader = new FileReader(); reader.onload = function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const sheetName = workbook.SheetNames.find(name => name.includes('PREZZI_OGGI')); if (sheetName) { const sheet = workbook.Sheets[sheetName]; const jsonData = XLSX.utils.sheet_to_json(sheet); const newStations = jsonData.map(row => ({ brand: row['Brand'] || '', name: row['Nome Impianto'] || '', address: row['Indirizzo'] || '', city: row['Comune'] || '', province: row['Provincia'] || '', lat: parseFloat(row['Latitudine']) || 0, lng: parseFloat(row['Longitudine']) || 0, fuelType: row['Carburante'] || '', price: parseFloat(row['Prezzo']) || 0, lastUpdate: row['Data Aggiornamento'] || new Date().toISOString().split('T')[0], diff: parseInt(row['DIFFERENZA']) || 0, description: row['DESCRIZIONE'] || '' })).filter(s => s.lat && s.lng && s.price > 0); if (newStations.length > 0) { stations = newStations; filteredStations = [...stations]; lastUpdate = new Date(); updateLastUpdateText(); updateFilterOptions(); updateboxStats(); updatePriceRange(); updateConfigModal(); displayStations(); showToast('File importato con successo! ' + stations.length + ' stazioni caricate', 'success'); } else showToast('Nessuna stazione valida trovata nel file', 'error'); } else showToast('Foglio PREZZI_OGGI non trovato', 'error'); } catch (error) { console.error('Errore importazione:', error); showToast('Errore durante l\'importazione del file', 'error'); } hideLoading(); input.value = ''; }; reader.readAsArrayBuffer(file); }
+        function importExcelFile(input) { const file = input.files[0]; if (!file) return; showLoading('Importazione Excel...'); updateLoadingProgress(20, 'Lettura file...'); const reader = new FileReader(); reader.onload = function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const sheetName = workbook.SheetNames.find(name => name.includes('PREZZI_OGGI')); if (sheetName) { updateLoadingProgress(60, 'Elaborazione dati...'); const sheet = workbook.Sheets[sheetName]; const jsonData = XLSX.utils.sheet_to_json(sheet); const newStations = jsonData.map(row => ({ brand: row['Brand'] || '', name: row['Nome Impianto'] || '', address: row['Indirizzo'] || '', city: row['Comune'] || '', province: row['Provincia'] || '', lat: parseFloat(row['Latitudine']) || 0, lng: parseFloat(row['Longitudine']) || 0, fuelType: row['Carburante'] || '', price: parseFloat(row['Prezzo']) || 0, lastUpdate: row['Data Aggiornamento'] || new Date().toISOString().split('T')[0], diff: parseInt(row['DIFFERENZA']) || 0, description: row['DESCRIZIONE'] || '' })).filter(s => s.lat && s.lng && s.price > 0); if (newStations.length > 0) { stations = newStations; filteredStations = [...stations]; lastUpdate = new Date(); updateLoadingProgress(90, 'Visualizzazione mappa...'); updateLastUpdateText(); updateFilterOptions(); updateboxStats(); updatePriceRange(); updateConfigModal(); displayStations(); updateLoadingProgress(100, 'Completato!'); showToast('File importato con successo! ' + stations.length + ' stazioni caricate', 'success'); } else showToast('Nessuna stazione valida trovata nel file', 'error'); } else showToast('Foglio PREZZI_OGGI non trovato', 'error'); } catch (error) { console.error('Errore importazione:', error); showToast('Errore durante l\'importazione del file', 'error'); } setTimeout(() => hideLoading(), 400); input.value = ''; }; reader.readAsArrayBuffer(file); }
         function exportFilteredToExcel() { if (filteredStations.length === 0) { showToast('Nessuna stazione da esportare', 'error'); return; } try { const exportData = filteredStations.map(s => ({ 'Brand': s.brand, 'Nome Impianto': s.name, 'Indirizzo': s.address, 'Comune': s.city, 'Provincia': s.province, 'Latitudine': s.lat, 'Longitudine': s.lng, 'Carburante': s.fuelType, 'Prezzo': s.price, 'Tipo Prezzo': s.priceType || 'originale', 'Carta': s.cardName || '', 'Prezzo Originale': s.originalPrice || s.price, 'Data Aggiornamento': s.lastUpdate, 'DIFFERENZA': s.diff || 0, 'DESCRIZIONE': s.description || '' })); const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, 'PREZZI_OGGI'); const now = new Date(); const filename = `stazioni_filtrate_${now.toISOString().slice(0,10).replace(/-/g, '')}_${now.toTimeString().slice(0,8).replace(/:/g, '')}.xlsx`; XLSX.writeFile(wb, filename); showToast(`✅ Esportate ${filteredStations.length} stazioni`, 'success'); } catch (error) { console.error('Errore durante l\'esportazione:', error); showToast('❌ Errore durante l\'esportazione', 'error'); } }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const toggleIcon = document.getElementById('toggleIcon'); sidebar.classList.toggle('collapsed'); toggleIcon.className = sidebar.classList.contains('collapsed') ? 'fas fa-cog' : 'fas fa-cog'; setTimeout(() => { if (map) map.invalidateSize(); }, 300); }
-        function showLoading() { document.getElementById('loadingOverlay').classList.remove('hidden'); }
-        function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
+
+        // ==================== LOADING OVERLAY CON PROGRESS % ====================
+        function showLoading(initialText) {
+            loadingProgressValue = 0;
+            const overlay = document.getElementById('loadingOverlay');
+            const textEl = document.getElementById('loadingText');
+            const percentEl = document.getElementById('loadingPercent');
+            const barEl = document.getElementById('loadingProgressBar');
+            if (textEl) textEl.textContent = initialText || 'Caricamento dati in corso...';
+            if (percentEl) percentEl.textContent = '0%';
+            if (barEl) barEl.style.width = '0%';
+            if (overlay) overlay.classList.remove('hidden');
+        }
+
+        function updateLoadingProgress(percent, text) {
+            // Impedisce che il progresso diminuisca (monotono crescente)
+            loadingProgressValue = Math.max(loadingProgressValue, Math.min(100, percent));
+            const overlay = document.getElementById('loadingOverlay');
+            const textEl = document.getElementById('loadingText');
+            const percentEl = document.getElementById('loadingPercent');
+            const barEl = document.getElementById('loadingProgressBar');
+            if (percentEl) percentEl.textContent = Math.round(loadingProgressValue) + '%';
+            if (barEl) barEl.style.width = loadingProgressValue + '%';
+            if (textEl && text) textEl.textContent = text;
+            // Fallback: se per qualche motivo l'overlay è nascosto, mostralo
+            if (overlay && overlay.classList.contains('hidden') && loadingProgressValue < 100) {
+                overlay.classList.remove('hidden');
+            }
+        }
+
+        function hideLoading() {
+            if (loadingProgressInterval) { clearInterval(loadingProgressInterval); loadingProgressInterval = null; }
+            updateLoadingProgress(100, 'Completato!');
+            setTimeout(() => {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) overlay.classList.add('hidden');
+                // Reset dopo la chiusura per la prossima apertura
+                setTimeout(() => {
+                    loadingProgressValue = 0;
+                    const percentEl = document.getElementById('loadingPercent');
+                    const barEl = document.getElementById('loadingProgressBar');
+                    if (percentEl) percentEl.textContent = '0%';
+                    if (barEl) barEl.style.width = '0%';
+                }, 400);
+            }, 350);
+        }
+
         function showToast(message, type) { const toast = document.createElement('div'); toast.className = `toast toast-${type}`; toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}" style="color: ${type === 'success' ? '#28A745' : '#DC3545'}"></i><span>${message}</span>`; document.body.appendChild(toast); setTimeout(() => toast.remove(), 3000); }
         function showLastUpdate() { if (lastUpdate) { const dateStr = lastUpdate.toLocaleDateString('it-IT') + ' ' + lastUpdate.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); showToast('Ultimo aggiornamento: ' + dateStr, 'success'); } else showToast('Nessun aggiornamento disponibile', 'error'); }
         function updateLastUpdateText() { if (lastUpdate) document.getElementById('lastUpdateText').textContent = lastUpdate.toLocaleDateString('it-IT'); }
