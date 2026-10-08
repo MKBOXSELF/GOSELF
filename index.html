@@ -4,255 +4,367 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MK_GO_FUEL_SELF</title>
-    
-    <!-- DNS Prefetch per CDN -->
+
     <link rel="dns-prefetch" href="https://unpkg.com">
     <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
     <link rel="dns-prefetch" href="https://tile.openstreetmap.org">
-    
-    <!-- Critical CSS inline per fast first paint -->
+
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; height: 100vh; width: 100vw; background: #fff; }
-        #app { height: 100%; width: 100%; display: flex; flex-direction: column; }
-        #map { flex: 1; width: 100%; background: #f0f0f0; }
-        .app-header { background: #0066B3; color: white; padding: 4px 10px; height: 44px; display: flex; align-items: center; justify-content: space-between; z-index: 1000; }
-        .logo { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 600; }
-        .header-right { display: flex; gap: 4px; align-items: center; }
-        .header-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        
-        .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.98); display: flex; align-items: center; justify-content: center; z-index: 4000; }
-        .loading-overlay.hidden { display: none; }
-        .loading-content { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 34px; background: white; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,0.15); min-width: 280px; }
-        .loading-text { font-size: 13px; font-weight: 600; color: #0066B3; text-align: center; }
-        .loading-progress-container { width: 100%; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
-        .loading-progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #0066B3, #0099CC); transition: width 0.35s ease; }
-        .loading-percent { font-size: 22px; font-weight: bold; color: #0066B3; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f0f0f0; border-top: 4px solid #0066B3; border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .toast { position: fixed; top: 50px; right: 15px; background: white; padding: 10px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 5000; animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        :root {
+            --primary-blue: #0066B3;
+            --secondary-blue: #0099CC;
+            --accent-orange: #FF6600;
+            --success-green: #28A745;
+            --bg: #f5f5f5;
+            --text: #1f1f1f;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        #app {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            background: var(--primary-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            min-height: 44px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            z-index: 1000;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .header-btn {
+            background: rgba(255,255,255,0.18);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #map {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            background: #eef3f8;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.97);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 4000;
+            transition: opacity 0.25s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-content {
+            min-width: 280px;
+            max-width: 90vw;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+            padding: 22px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 4px solid #edf3f9;
+            border-top-color: var(--primary-blue);
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            text-align: center;
+        }
+
+        .loading-progress-container {
+            width: 100%;
+            height: 8px;
+            background: #ececec;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .loading-progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue));
+            border-radius: 999px;
+            transition: width 0.25s ease;
+        }
+
+        .loading-percent {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary-blue);
+        }
+
+        .toast {
+            position: fixed;
+            top: 60px;
+            right: 16px;
+            background: white;
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 8px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            z-index: 5000;
+            font-size: 12px;
+        }
+
+        @media (max-width: 540px) {
+            .brand { font-size: 13px; }
+            .header-btn { padding: 5px 8px; font-size: 11px; }
+        }
     </style>
-    
-    <!-- Async load CDN scripts -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" async>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" async>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" async>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" async>
-    
-    <!-- Inline data loader to prevent async race conditions -->
-    <script>
-        // Inline data loader - loads BEFORE DOM content
-        window.FuelDataLoader = class {
-            constructor(options = {}) {
-                this.baseUrl = options.baseUrl || './';
-                this.cacheName = 'mkfuel-cache-v1';
-                this.storeName = 'fuel-store';
-                this.ttlMs = 60 * 60 * 1000;
-                this.data = null;
-            }
-            
-            async load(fileName, { forceRefresh = false } = {}) {
-                if (!forceRefresh && this.data) return this.data;
-                
-                if (!forceRefresh) {
-                    const cached = await this.readCache(fileName);
-                    if (cached) { this.data = cached; return cached; }
-                }
-                
-                try {
-                    const url = this.baseUrl + fileName;
-                    const response = await fetch(url, { cache: 'no-cache' });
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    
-                    const json = await response.json();
-                    this.data = json;
-                    this.writeCache(fileName, json).catch(() => {});
-                    return json;
-                } catch (error) {
-                    console.error('Data load error:', error);
-                    throw error;
-                }
-            }
-            
-            async readCache(fileName) {
-                try {
-                    if (!('indexedDB' in window)) return null;
-                    const db = await this.openDb();
-                    return new Promise((resolve, reject) => {
-                        const tx = db.transaction(this.storeName, 'readonly');
-                        const req = tx.objectStore(this.storeName).get(fileName);
-                        req.onsuccess = () => {
-                            const entry = req.result;
-                            if (!entry) resolve(null);
-                            else if (Date.now() - entry.ts < this.ttlMs) resolve(entry.data);
-                            else { this.deleteCache(fileName); resolve(null); }
-                        };
-                        req.onerror = () => reject(req.error);
-                    });
-                } catch (e) { return null; }
-            }
-            
-            async writeCache(fileName, data) {
-                try {
-                    if (!('indexedDB' in window)) return;
-                    const db = await this.openDb();
-                    const tx = db.transaction(this.storeName, 'readwrite');
-                    tx.objectStore(this.storeName).put({ id: fileName, data, ts: Date.now() });
-                } catch (e) { console.warn('Cache write failed'); }
-            }
-            
-            async deleteCache(fileName) {
-                try {
-                    const db = await this.openDb();
-                    db.transaction(this.storeName, 'readwrite').objectStore(this.storeName).delete(fileName);
-                } catch (e) { }
-            }
-            
-            openDb() {
-                return new Promise((resolve, reject) => {
-                    const req = indexedDB.open(this.cacheName, 1);
-                    req.onupgradeneeded = () => {
-                        if (!req.result.objectStoreNames.contains(this.storeName)) {
-                            req.result.createObjectStore(this.storeName, { keyPath: 'id' });
-                        }
-                    };
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => reject(req.error);
-                });
-            }
-        };
-        
-        window.__dataLoader = new window.FuelDataLoader();
-        window.loadFuelData = (file, opts) => window.__dataLoader.load(file, opts);
-        
-        console.log('✓ Data loader initialized');
-    </script>
 </head>
 <body>
     <div id="app">
         <header class="app-header">
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <button class="header-btn" id="menuToggleBtn" onclick="alert('Menu')">☰ Menu</button>
-                <div class="logo">⛽ MK_GO_FUEL_SELF</div>
-            </div>
-            <div class="header-right">
-                <button class="header-btn" onclick="getLocation()">📍 Pos</button>
-                <button class="header-btn" onclick="location.reload()">🔄 Refresh</button>
+            <div class="brand">⛽ MK_GO_FUEL_SELF</div>
+            <div class="header-actions">
+                <button class="header-btn" onclick="getCurrentLocation()">📍 Posizione</button>
+                <button class="header-btn" onclick="location.reload()">🔄 Aggiorna</button>
             </div>
         </header>
-        
         <div id="map"></div>
     </div>
 
-    <!-- Loading overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-content">
             <div class="spinner"></div>
-            <div class="loading-text" id="loadingText">Caricamento...</div>
+            <div id="loadingText" class="loading-text">Caricamento dati...</div>
             <div class="loading-progress-container">
-                <div class="loading-progress-bar" id="loadingProgressBar"></div>
+                <div id="loadingProgressBar" class="loading-progress-bar"></div>
             </div>
-            <div class="loading-percent" id="loadingPercent">0%</div>
+            <div id="loadingPercent" class="loading-percent">0%</div>
         </div>
     </div>
 
-    <!-- Register service worker + load data -->
     <script>
-        const updateProgress = (pct, msg) => {
-            if (document.getElementById('loadingProgressBar')) {
-                document.getElementById('loadingProgressBar').style.width = pct + '%';
-            }
-            if (msg && document.getElementById('loadingText')) {
-                document.getElementById('loadingText').textContent = msg;
-            }
-            if (document.getElementById('loadingPercent')) {
-                document.getElementById('loadingPercent').textContent = pct + '%';
-            }
+        window.__appState = {
+            map: null,
+            markerGroup: null,
+            data: [],
+            loaded: false
         };
 
-        const hideLoader = () => {
-            const el = document.getElementById('loadingOverlay');
-            if (el) el.classList.add('hidden');
-        };
+        function setLoading(pct, text) {
+            const bar = document.getElementById('loadingProgressBar');
+            const label = document.getElementById('loadingText');
+            const percent = document.getElementById('loadingPercent');
+            if (bar) bar.style.width = pct + '%';
+            if (label && text) label.textContent = text;
+            if (percent) percent.textContent = pct + '%';
+        }
 
-        // Initialize
-        (async () => {
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.classList.add('hidden');
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2200);
+        }
+
+        function loadScript(src) {
+            return new Promise((resolve) => {
+                const existing = document.querySelector('script[src="' + src + '"]');
+                if (existing) {
+                    if (existing.dataset.loaded === '1') return resolve();
+                    existing.addEventListener('load', () => resolve(), { once: true });
+                    return;
+                }
+
+                const s = document.createElement('script');
+                s.src = src;
+                s.async = true;
+                s.onload = () => {
+                    s.dataset.loaded = '1';
+                    resolve();
+                };
+                s.onerror = () => resolve();
+                document.head.appendChild(s);
+            });
+        }
+
+        function loadLeaflet() {
+            return Promise.all([
+                loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'),
+                loadScript('https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js')
+            ]).then(() => {
+                const css = document.createElement('link');
+                css.rel = 'stylesheet';
+                css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+                document.head.appendChild(css);
+
+                const css2 = document.createElement('link');
+                css2.rel = 'stylesheet';
+                css2.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css';
+                document.head.appendChild(css2);
+
+                const css3 = document.createElement('link');
+                css3.rel = 'stylesheet';
+                css3.href = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css';
+                document.head.appendChild(css3);
+            });
+        }
+
+        function initMap() {
+            if (!window.L) return;
+            const map = L.map('map', { zoomControl: true }).setView([41.8719, 12.5674], 6);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+            window.__appState.map = map;
+        }
+
+        function addStationsInBatches(data) {
+            if (!window.__appState.map || !window.L) return;
+
+            const group = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 45 });
+            window.__appState.markerGroup = group;
+            window.__appState.map.addLayer(group);
+
+            const batchSize = 120;
+            let index = 0;
+
+            function renderNextBatch() {
+                const limit = Math.min(index + batchSize, data.length);
+                for (; index < limit; index++) {
+                    const st = data[index];
+                    if (!st || !st.lat || !st.lng) continue;
+                    const marker = L.marker([st.lat, st.lng]);
+                    const name = st.name || st.brand || 'Stazione';
+                    const price = st.price || st.prezzo || 'N/A';
+                    marker.bindPopup('<div style="min-width:180px"><strong>' + name + '</strong><br>Prezzo: ' + price + '</div>');
+                    group.addLayer(marker);
+                }
+
+                setLoading(Math.min(95, 30 + (index / Math.max(data.length, 1)) * 65), 'Aggiornamento mappe...');
+
+                if (index < data.length) {
+                    requestAnimationFrame(renderNextBatch);
+                } else {
+                    setLoading(100, 'Pronto!');
+                    setTimeout(hideLoading, 350);
+                }
+            }
+
+            renderNextBatch();
+        }
+
+        async function loadData() {
+            const url = 'https://mkboxself.github.io/fuel-data/stations.json';
+            const response = await fetch(url, { cache: 'no-cache' });
+            if (!response.ok) throw new Error('Dati non disponibili');
+            const json = await response.json();
+            return Array.isArray(json) ? json : Object.values(json || {});
+        }
+
+        async function bootstrap() {
             try {
-                updateProgress(5, 'Inizializzazione...');
-                
-                // Register SW
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('sw-cache.js').catch(e => console.warn('SW failed:', e));
-                }
-                
-                updateProgress(10, 'Caricamento dati...');
-                
-                // Load async Leaflet
-                await Promise.all([
-                    new Promise(r => {
-                        const s = document.createElement('script');
-                        s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-                        s.onload = r;
-                        s.onerror = () => { console.warn('Leaflet load failed'); r(); };
-                        document.head.appendChild(s);
-                    }),
-                    new Promise(r => {
-                        const s = document.createElement('script');
-                        s.src = 'https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js';
-                        s.onload = r;
-                        s.onerror = r;
-                        document.head.appendChild(s);
-                    })
-                ]);
-                
-                updateProgress(30, 'Caricamento combustibili...');
-                const data = await window.loadFuelData('stations.json');
-                
-                if (!data) throw new Error('No data returned');
-                
-                window.FUEL_DATA = data;
-                updateProgress(95, 'Preparazione...');
-                
-                // Initialize map
-                if (window.L && document.getElementById('map')) {
-                    const map = L.map('map').setView([41.8719, 12.5674], 6);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                    
-                    if (Array.isArray(data) && data.length > 0) {
-                        const group = new L.MarkerClusterGroup();
-                        data.slice(0, 500).forEach(s => {
-                            if (s.lat && s.lng) {
-                                group.addLayer(L.marker([s.lat, s.lng]).bindPopup(s.name || 'Station'));
-                            }
-                        });
-                        map.addLayer(group);
-                        console.log(`✓ ${Math.min(data.length, 500)} markers loaded`);
-                    }
-                }
-                
-                updateProgress(100, 'Pronto!');
-                setTimeout(hideLoader, 500);
-                console.log('✓ App ready');
-                
-            } catch (error) {
-                console.error('Init error:', error);
-                updateProgress(0, 'Errore: ' + error.message);
-                setTimeout(() => location.reload(), 3000);
-            }
-        })();
+                setLoading(5, 'Inizializzazione...');
 
-        function getLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    pos => console.log('📍', pos.coords),
-                    err => console.warn('Geolocation denied')
-                );
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('sw-cache.js').catch(() => {});
+                }
+
+                setLoading(15, 'Caricamento librerie...');
+                await loadLeaflet();
+                initMap();
+
+                setLoading(30, 'Download dati...');
+                const data = await loadData();
+                if (!data || data.length === 0) throw new Error('Nessun dato trovato');
+
+                window.__appState.data = data;
+                addStationsInBatches(data);
+            } catch (err) {
+                console.error(err);
+                setLoading(0, 'Errore caricamento');
+                showToast('Errore caricamento dati');
+                setTimeout(() => location.reload(), 2500);
             }
         }
+
+        function getCurrentLocation() {
+            if (!navigator.geolocation) {
+                showToast('Geolocalizzazione non supportata');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    if (window.__appState.map) {
+                        window.__appState.map.setView([latitude, longitude], 12);
+                    }
+                    showToast('Posizione aggiornata');
+                },
+                () => showToast('Impossibile ottenere la posizione'),
+                { enableHighAccuracy: true, timeout: 8000 }
+            );
+        }
+
+        window.addEventListener('load', bootstrap);
     </script>
-    
-    <!-- Async load remaining non-critical scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" async defer></script>
 </body>
 </html>
