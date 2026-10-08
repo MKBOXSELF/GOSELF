@@ -1879,7 +1879,7 @@
         // ==================== DATA LOAD (CACHE-FIRST + IDB + SW) ====================
         async function loadDataFromGoogleSheet() {
             showLoading('Caricamento dati impianti...');
-            updateLoadingProgress(10, 'Aggiornamento prezzi carburante ---https://carburanti.mise.gov.it/---');
+            updateLoadingProgress(10, 'Aggiornamento prezzi carburante "https://carburanti.mise.gov.it"');
             let cacheShown = false;
             let cachedStations = null;
             try {
@@ -2023,7 +2023,7 @@
                     map.setView([currentPosition.lat, currentPosition.lng], 14);
                     if (currentLocationMarker) map.removeLayer(currentLocationMarker);
                     currentLocationMarker = L.marker([currentPosition.lat, currentPosition.lng], { icon: L.divIcon({ className: 'current-location-marker', html: '<div style="background-color: #28A745; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>', iconSize: [26, 26], popupAnchor: [0, -13] }) }).addTo(map);
-                    currentLocationMarker.bindPopup('La tua posizione').openPopup();
+                    
                     showToast('✅ Posizione aggiornata!', 'success');
                     localStorage.setItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED, 'true');
                     displayStations();
