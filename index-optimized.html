@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MK_GO_FUEL_SELF</title>
+    
+    <!-- Preconnect per i domini dei tile per velocizzare il caricamento -->
+    <link rel="preconnect" href="https://tile.openstreetmap.org">
+    <link rel="preconnect" href="https://server.arcgisonline.com">
+    <link rel="preconnect" href="https://tile.openstreetmap.de">
+    <link rel="preconnect" href="https://services.arcgisonline.com">
+    <link rel="preconnect" href="https://mt1.google.com">
+    <link rel="preconnect" href="https://api.tomtom.com">
+    <link rel="preconnect" href="https://mkboxself.github.io">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="data-loader.js" defer></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root { --primary-blue: #0066B3; --secondary-blue: #0099CC; --accent-orange: #FF6600; --light-gray: #F5F5F5; --medium-gray: #E0E0E0; --dark-gray: #333333; --success-green: #28A745; --warning-yellow: #FFC107; --alert-red: #DC3545; }
+        body { margin: 0; padding: 0; overflow: hidden; height: 100vh; width: 100vw; }
+        #app { height: 100%; width: 100%; position: relative; display: flex; flex-direction: column; }
+        #map { flex: 1; width: 100%; z-index: 1; }
+        .app-header { background: var(--primary-blue); color: white; display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.1); height: 44px; flex-wrap: wrap; }
+        .logo { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .logo i { font-size: 20px; }
+        .header-right { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+        .header-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 3px; font-size: 12px; transition: background 0.3s; }
+        .header-btn:hover { background: rgba(255,255,255,0.3); }
+        .menu-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 10px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.3s; margin-right: 2px; }
+        .menu-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        .hidden { display: none !important; }
+        .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.98); display: flex; align-items: center; justify-content: center; z-index: 4000; flex-direction: column; }
+        .loading-overlay.hidden { display: none; }
+        .loading-content { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 26px 34px; background: white; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,0.15); min-width: 280px; max-width: 90vw; }
+        .loading-text { font-size: 13px; font-weight: 600; color: var(--primary-blue); text-align: center; min-height: 18px; }
+        .loading-progress-container { width: 100%; height: 8px; background: var(--light-gray); border-radius: 4px; overflow: hidden; position: relative; }
+        .loading-progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary-blue), var(--secondary-blue)); border-radius: 4px; transition: width 0.35s ease; box-shadow: 0 0 8px rgba(0,102,179,0.5); }
+        .loading-percent { font-size: 22px; font-weight: bold; color: var(--primary-blue); font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--light-gray); border-top: 4px solid var(--primary-blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Placeholder styles per quando dati non ancora caricati */
+        .sidebar { position: absolute; top: 44px; left: 0; width: 300px; height: calc(100% - 44px); background: white; z-index: 1000; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: transform 0.3s ease; overflow: hidden; }
+        .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 3000; padding: 12px; }
+        .modal.hidden { display: none; }
+        .modal-content { background: white; border-radius: 10px; width: 100%; max-width: 650px; max-height: 85vh; overflow-y: auto; }
+        .modal-header { background: var(--primary-blue); color: white; padding: 10px 15px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 14px; margin: 0; }
+        .modal-close-btn { background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+        .modal-close-btn:hover { background: rgba(255,255,255,0.2); }
+        .modal-body { padding: 15px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: all 0.3s; font-size: 12px; }
+        .btn-primary { background: var(--accent-orange); color: white; }
+        .btn-primary:hover { background: #e65c00; }
+        .toast { position: fixed; top: 50px; right: 15px; background: white; padding: 10px 16px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 5000; display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast-success { border-left: 4px solid var(--success-green); }
+        .toast-error { border-left: 4px solid var(--alert-red); }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header class="app-header">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <button class="menu-btn" id="menuToggleBtn" onclick="openMenuModal()"><i class="fas fa-bars"></i></button>
+                <div class="logo"><i class="fas fa-gas-pump"></i><span>MK_GO_FUEL_SELF_DEMO</span></div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" onclick="getCurrentLocation(true)"><i class="fas fa-location-dot"></i><span>Posizione</span></button>
+                <button class="header-btn" onclick="refreshMap()"><i class="fas fa-sync-alt"></i><span>Aggiorna</span></button>
+            </div>
+        </header>
+        
+        <div id="map"></div>
+    </div>
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loadingText">Caricamento dati...</div>
+            <div class="loading-progress-container">
+                <div class="loading-progress-bar" id="loadingProgressBar" style="width: 0%;"></div>
+            </div>
+            <div class="loading-percent" id="loadingPercent">0%</div>
+        </div>
+    </div>
+
+    <script>
+        // ========== INIT LOADING ==========
+        console.log('🚀 MK_GO_FUEL_SELF - Initializing with optimized data loading...');
+        
+        function updateLoadingProgress(percentage, message = null) {
+            const progressBar = document.getElementById('loadingProgressBar');
+            const progressText = document.getElementById('loadingText');
+            const progressPercent = document.getElementById('loadingPercent');
+            
+            if (progressBar) progressBar.style.width = percentage + '%';
+            if (progressText && message) progressText.textContent = message;
+            if (progressPercent) progressPercent.textContent = percentage + '%';
+        }
+
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.classList.add('hidden');
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // ========== LAZY LOAD DATA ==========
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateLoadingProgress(5, 'Inizializzazione...');
+            
+            try {
+                // Carica data loader
+                updateLoadingProgress(10, 'Caricamento libreria...');
+                
+                // Registra service worker
+                if ('serviceWorker' in navigator) {
+                    try {
+                        await navigator.serviceWorker.register('sw-cache.js');
+                        console.log('✓ Service Worker registrato');
+                    } catch (err) {
+                        console.warn('Service Worker registration failed:', err);
+                    }
+                }
+
+                // Carica dati stazioni
+                updateLoadingProgress(15, 'Download dati combustibili...');
+                const data = await loadFuelData('stations.json');
+                
+                if (data && (Array.isArray(data) || typeof data === 'object')) {
+                    updateLoadingProgress(95, 'Preparazione interfaccia...');
+                    console.log(`✓ Dati caricati: ${Array.isArray(data) ? data.length : Object.keys(data).length} elementi`);
+                    
+                    // Salva in window per accesso globale
+                    window.FUEL_DATA = data;
+                    
+                    // Esegui callback se disponibile
+                    if (window.onDataLoaded) {
+                        window.onDataLoaded(data);
+                    }
+                    
+                    updateLoadingProgress(100, 'Pronto!');
+                    setTimeout(() => hideLoadingOverlay(), 500);
+                } else {
+                    throw new Error('Dati non validi');
+                }
+            } catch (error) {
+                console.error('❌ Errore caricamento:', error);
+                updateLoadingProgress(0, `Errore: ${error.message}`);
+                showToast(`Errore: ${error.message}`, 'error');
+                
+                // Retry dopo 3 secondi
+                setTimeout(() => location.reload(), 3000);
+            }
+        });
+
+        // ========== DUMMY FUNCTIONS (TO AVOID ERRORS) ==========
+        function openMenuModal() { alert('Menu'); }
+        function getCurrentLocation(force) { console.log('Getting location...'); }
+        function refreshMap() { console.log('Refreshing map...'); }
+        function onDataLoaded(data) { console.log('Data loaded:', data); }
+
+        // Callback quando dati sono pronti
+        window.onDataLoaded = function(fuelData) {
+            console.log('📍 Fuel data ready for map initialization');
+            // Qui puoi inizializzare la mappa con i dati
+        };
+    </script>
+</body>
+</html>
