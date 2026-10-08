@@ -1,0 +1,17 @@
+#!/bin/bash
+# Script per annullare tutti i commit di oggi (8 ottobre 2026)
+# Questo mantiene la cronologia completa
+
+git checkout main
+git fetch origin
+
+# Revert di tutti i 6 commit di oggi in ordine inverso
+git revert --no-edit 3608c333fa0c598fe636ac66679a2b89621f39fe
+git revert --no-edit e76e481fb2fdcf83e72107fad90b9273bf1bee41
+git revert --no-edit 67ffbfb5335bc2e36739eefb2eb065c7518e0082
+git revert --no-edit 11d78d701cec76e3db22e842e8c671c0a5020a54
+git revert --no-edit ce445dd5900a97644adc85209587e7dc6e2a7ffb
+git revert --no-edit 9a95c6d1f854fe11066d518f0df8a9194e9b1178
+
+# Push dei revert al server
+git push origin main
