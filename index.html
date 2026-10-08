@@ -1879,7 +1879,7 @@
         // ==================== DATA LOAD (CACHE-FIRST + IDB + SW) ====================
         async function loadDataFromGoogleSheet() {
             showLoading('Caricamento dati impianti...');
-            updateLoadingProgress(10, 'Lettura cache locale...');
+            updateLoadingProgress(10, 'Aggiorna prezzi distributori su https://carburanti.mise.gov.it/');
             let cacheShown = false;
             let cachedStations = null;
             try {
@@ -1893,7 +1893,7 @@
                 lastUpdate = new Date(parseInt(localStorage.getItem(STORAGE_KEYS.STATIONS_CACHE_TIME) || Date.now()));
                 updateLastUpdateText(); updateFilterOptions(); updateboxStats(); updatePriceRange(); updateConfigModal(); displayStations();
                 cacheShown = true;
-                updateLoadingProgress(45, `Mostrati ${stations.length} impianti da cache. Aggiornamento...`);
+                updateLoadingProgress(45, `Mostrati ${stations.length} impianti trovati. Aggiornamento...`);
             }
             try {
                 const data = await fetchFirstAvailableJson(DATA_JSON_URLS);
@@ -1905,7 +1905,7 @@
                 lastUpdate = new Date();
                 updateLastUpdateText(); updateLoadingProgress(85, 'Aggiornamento interfaccia...');
                 updateFilterOptions(); updateboxStats(); updatePriceRange(); updateConfigModal(); displayStations();
-                updateLoadingProgress(92, 'Salvataggio cache...');
+                updateLoadingProgress(92, 'Caricamento impianti...');
                 try {
                     if (newStations.length >= IDB_THRESHOLD) { await saveStationsToIDB(newStations); try { localStorage.removeItem(STORAGE_KEYS.STATIONS_CACHE); } catch(_) {} }
                     else { saveStationsToCache(newStations); saveStationsToIDB(newStations).catch(() => {}); }
