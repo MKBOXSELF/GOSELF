@@ -20,6 +20,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- NUOVO: QRCode.js per generazione QR PayPal lato client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         /* ========== STILI COMPATTI E OTTIMIZZATI ========== */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -36,6 +38,17 @@
         .header-btn i { font-size: 13px; }
         .header-btn.box-active { background: var(--accent-orange); }
         .header-btn.nav-active { background: var(--success-green); animation: pulse-green 1.5s infinite; }
+        /* NUOVO: Pulsante Sostieni - effetto cuore pulsante */
+        .header-btn.support-btn { background: rgba(255, 100, 100, 0.25); }
+        .header-btn.support-btn:hover { background: rgba(255, 100, 100, 0.45); }
+        .header-btn.support-btn i { animation: heartbeat 2.4s ease-in-out infinite; }
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            15% { transform: scale(1.25); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); }
+            60% { transform: scale(1); }
+        }
         /* Pulsante Guida Notturna */
         #nightModeBtn {
             background: rgba(255,255,255,0.2);
@@ -343,19 +356,8 @@
         .leaflet-popup-content { margin: 0; min-width: 240px; }
         .station-marker { background: transparent; border: none; }
         .marker-content { background-color: var(--primary-blue); width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 7px; line-height: 1.1; text-align: center; transition: transform 0.2s; position: relative; }
-        /* Hover standard per tutti i marker */
-.marker-content:hover {
-    transform: scale(2) !important;
-    z-index: 1000 !important;
-    transition: transform 0.2s ease !important;
-}
-
-/* Hover specifico per i marker "top 5" (più convenienti sullo schermo) */
-.marker-content.cheapest-on-screen:hover {
-    transform: scale(2) !important;
-    animation: none !important; /* interrompe l'animazione pulse durante l'hover per evitare conflitti */
-    box-shadow: 0 0 15px 2px rgba(255,215,0,0.8) !important; /* mantiene l'ombra dorata */
-}
+        .marker-content:hover { transform: scale(2) !important; z-index: 1000 !important; transition: transform 0.2s ease !important; }
+        .marker-content.cheapest-on-screen:hover { transform: scale(2) !important; animation: none !important; box-shadow: 0 0 15px 2px rgba(255,215,0,0.8) !important; }
         .marker-content.favorite { border: 3px solid gold; box-shadow: 0 0 12px gold; transform: scale(1.05); }
         .marker-price { font-size: 8px; font-weight: bold; margin-top: -1px; }
         .marker-currency { font-size: 6px; opacity: 0.9; margin-bottom: -2px; }
@@ -890,6 +892,298 @@
         body.night-mode .loading-percent {
             color: #88ccff;
         }
+
+        /* ============================================================
+           NUOVO: PAYPAL SUPPORT + QR MODAL + SHARE SOCIAL
+           ============================================================ */
+        .paypal-support {
+            margin: 18px 0 0;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, rgba(0, 102, 179, 0.10) 0%, rgba(255, 102, 0, 0.08) 100%);
+            border: 1px solid rgba(0, 102, 179, 0.28);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .paypal-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 22px;
+            background: linear-gradient(135deg, #0070ba 0%, #003087 100%);
+            color: #fff;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0, 112, 186, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+            transition: transform 0.2s, box-shadow 0.2s;
+            letter-spacing: 0.2px;
+            text-align: center;
+        }
+        .paypal-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 28px rgba(0, 112, 186, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        .btn-qr-show {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 18px;
+            background: linear-gradient(135deg, #28A745 0%, #0099CC 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(40, 167, 69, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+            letter-spacing: 0.2px;
+        }
+        .btn-qr-show:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 22px rgba(40, 167, 69, 0.6), 0 0 26px rgba(0, 153, 204, 0.4);
+        }
+        /* QR MODAL */
+        .qr-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 4500;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .qr-modal-overlay.open { display: flex; }
+        .qr-modal {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            animation: qrModalIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+        }
+        @keyframes qrModalIn {
+            from { opacity: 0; transform: scale(0.94) translateY(16px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .qr-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--primary-blue);
+            color: white;
+        }
+        .qr-modal-header h3 {
+            margin: 0;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .qr-modal-header .qr-close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        .qr-modal-header .qr-close-btn:hover { background: rgba(255,255,255,0.2); }
+        .qr-modal-body {
+            padding: 18px;
+            text-align: center;
+        }
+        .qr-owner {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--dark-gray);
+            margin: 0 0 12px;
+        }
+        .qr-code-wrapper {
+            width: 240px;
+            height: 240px;
+            margin: 0 auto 12px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 22px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--medium-gray);
+        }
+        .qr-code-wrapper img,
+        .qr-code-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+            display: block;
+        }
+        .qr-modal-loading {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .qr-hint {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.55;
+            margin: 8px 0 0;
+        }
+        .qr-hint strong { color: var(--primary-blue); }
+        .qr-modal-footer {
+            padding: 12px 18px;
+            background: var(--light-gray);
+            border-top: 1px solid var(--medium-gray);
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .qr-modal-footer .btn-qr-show {
+            font-size: 12px;
+            padding: 9px 16px;
+        }
+        /* SHARE SOCIAL */
+        .share-social-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 16px 0 4px;
+            padding: 14px 10px;
+            background: linear-gradient(135deg, rgba(0, 102, 179, 0.06) 0%, rgba(255, 102, 0, 0.05) 100%);
+            border-radius: 10px;
+            border: 1px solid var(--medium-gray);
+        }
+        .share-label {
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.1px;
+            text-transform: uppercase;
+            color: var(--primary-blue);
+            margin-bottom: 6px;
+        }
+        .btn-social {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-width: 42px;
+            height: 42px;
+            padding: 0 12px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(255, 255, 255, 0.12);
+            color: #fff;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.4), box-shadow 0.25s ease, filter 0.2s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            -webkit-tap-highlight-color: transparent;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn-social svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            flex-shrink: 0;
+        }
+        .btn-social:hover {
+            transform: translateY(-2px) scale(1.04);
+            filter: brightness(1.1);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        .btn-social:active { transform: translateY(0) scale(0.98); }
+        .btn-social.mail     { background: linear-gradient(135deg, #6b7280 0%, #374151 100%); }
+        .btn-social.whatsapp { background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); }
+        .btn-social.telegram { background: linear-gradient(135deg, #29A9EB 0%, #1c7fba 100%); }
+        .btn-social.facebook { background: linear-gradient(135deg, #1877F2 0%, #0d5bc1 100%); }
+        .btn-social.linkedin { background: linear-gradient(135deg, #0A66C2 0%, #004182 100%); }
+        .btn-social.copy     { background: linear-gradient(135deg, #FF6600 0%, #DC3545 100%); }
+        .btn-social.native   { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
+        @media (max-width: 480px) {
+            .btn-social .social-label { display: none; }
+            .btn-social { min-width: 42px; padding: 0 8px; }
+            .qr-code-wrapper { width: 200px; height: 200px; }
+        }
+        .share-feedback {
+            display: block;
+            width: 100%;
+            text-align: center;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--success-green);
+            margin-top: 6px;
+            min-height: 14px;
+            letter-spacing: 0.3px;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .share-feedback.visible { opacity: 1; }
+
+        /* ============================================================
+           MODIFICA 1: TESTO BIANCO NEI PULSANTI DELLA MODALE SOSTIENIMI
+           Forza il colore bianco su tutti i pulsanti e i loro contenuti
+           ============================================================ */
+        #sostienimiModal .paypal-btn,
+        #sostienimiModal .paypal-btn span,
+        #sostienimiModal .paypal-btn i,
+        #sostienimiModal .btn-qr-show,
+        #sostienimiModal .btn-qr-show span,
+        #sostienimiModal .btn-qr-show i,
+        #sostienimiModal .btn-social,
+        #sostienimiModal .btn-social span,
+        #sostienimiModal .btn-social i,
+        #sostienimiModal .btn-social svg,
+        #sostienimiModal .btn-social .social-label {
+            color: #ffffff !important;
+        }
+        #sostienimiModal .btn-social svg {
+            fill: #ffffff !important;
+        }
+
+        /* NIGHT MODE per nuovi elementi */
+        body.night-mode .qr-modal { background: #1e1e2f; color: #ddd; }
+        body.night-mode .qr-modal-header { background: #0d0d1a; }
+        body.night-mode .qr-modal-footer { background: #25253a; border-color: #444; }
+        body.night-mode .qr-owner { color: #ddd; }
+        body.night-mode .qr-hint { color: #aaa; }
+        body.night-mode .qr-code-wrapper { background: #fff; }
+        body.night-mode .share-social-row {
+            background: linear-gradient(135deg, rgba(0, 102, 179, 0.15) 0%, rgba(255, 102, 0, 0.1) 100%);
+            border-color: #444;
+        }
+        body.night-mode .share-label { color: #88ccff; }
+        body.night-mode .paypal-support {
+            background: linear-gradient(135deg, rgba(0, 102, 179, 0.15) 0%, rgba(255, 102, 0, 0.1) 100%);
+            border-color: #444;
+        }
     </style>
 </head>
 <body>
@@ -907,6 +1201,10 @@
                 <!-- Pulsante Guida Notturna (visibile solo quando navigatore attivo) -->
                 <button id="nightModeBtn" onclick="toggleNightMode()">
                     <i class="fas fa-moon"></i><span>Guida Notturna</span>
+                </button>
+                <!-- NUOVO: Pulsante Sostieni (apre la modal Sostienimi) -->
+                <button class="header-btn support-btn" onclick="showSostienimiModal()" title="Sostieni il progetto">
+                    <i class="fas fa-heart" style="color: #ffb3c1;"></i><span>Sostieni</span>
                 </button>
                 <button class="header-btn" onclick="getCurrentLocation(true)"><i class="fas fa-location-dot"></i><span>Posizione</span></button>
                 <button class="header-btn" onclick="refreshMap()"><i class="fas fa-sync-alt"></i><span>Aggiorna</span></button>
@@ -929,7 +1227,6 @@
                     <div class="menu-item" onclick="showContattamiModal()"><i class="fas fa-envelope"></i> CONTATTAMI</div>
                     <div class="menu-item" onclick="showConfiguraAziendaModal()"><i class="fas fa-building"></i> CONFIGURA LA TUA AZIENDA</div>
                     <div class="menu-item" onclick="showSostienimiModal()"><i class="fas fa-heart"></i> SOSTIENIMI</div>
-                    <!-- AGGIUNTA: Preferenze Cookie nel menu -->
                     <div class="menu-item" onclick="openCookiePreferences()"><i class="fas fa-cookie-bite"></i> PREFERENZE COOKIE</div>
                 </div>
             </div>
@@ -1037,25 +1334,102 @@
             </div>
         </div>
         
-        <!-- MODAL SOSTIENIMI -->
+        <!-- MODAL SOSTIENIMI - ARRICCHITA con PayPal, QR Code e pulsanti Social -->
         <div class="modal hidden" id="sostienimiModal" onclick="if(event.target === this) hideSostienimiModal()">
-            <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-content" style="max-width: 620px;">
                 <div class="modal-header">
-                    <h3><i class="fas fa-heart" style="color: #e74c3c;"></i> Sostienimi</h3>
+                    <h3><i class="fas fa-heart" style="color: #ffb3c1;"></i> Sostienimi</h3>
                     <button class="modal-close-btn" onclick="hideSostienimiModal()"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body info-modal-content">
-                    <p>Se apprezzi questo progetto e vuoi supportarne lo sviluppo e il mantenimento, puoi contattarmi per scoprire come contribuire.</p>
+                    <p>Se apprezzi questo progetto e vuoi supportarne lo sviluppo, il mantenimento e le nuove funzionalità, puoi offrirmi un caffè! ☕</p>
                     <p>Ogni supporto è prezioso per migliorare la piattaforma e offrire nuovi servizi.</p>
-                    
-                    <div class="contact-highlight">
-                        <strong>Michele Spina</strong><br>
-                        <i class="fas fa-envelope"></i> <a href="mailto:michelespinabox@gmail.com">michelespinabox@gmail.com</a>
+
+                    <!-- SEZIONE PAYPAL (come da foto) -->
+                    <div class="paypal-support">
+                        <a href="https://www.paypal.com/qrcodes/p2pqrc/XGG2DHDAHXMMQ"
+                           target="_blank" rel="noopener noreferrer" class="paypal-btn">
+                            ☕ Ti è stato utile? Se vuoi sostenere il mio lavoro, offrimi un caffè!
+                        </a>
+                        <button type="button" class="btn-qr-show" onclick="openQrModal()" aria-label="Mostra QR Code PayPal">
+                            📱 Mostra QR Code PayPal
+                        </button>
+
+                        <!-- PULSANTI SOCIAL (come da foto) -->
+                        <div class="share-social-row" style="width:100%;">
+                            <span class="share-label">💬 Fai conoscere MK_GO_FUEL_SELF</span>
+
+                            <button type="button" class="btn-social native" onclick="shareNative()" title="Condividi tramite app di sistema">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+                                <span class="social-label">Altro…</span>
+                            </button>
+
+                            <a class="btn-social whatsapp" id="share-whatsapp" href="#" target="_blank" rel="noopener noreferrer" title="Condividi su WhatsApp">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                                <span class="social-label">WhatsApp</span>
+                            </a>
+
+                            <a class="btn-social telegram" id="share-telegram" href="#" target="_blank" rel="noopener noreferrer" title="Condividi su Telegram">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                                <span class="social-label">Telegram</span>
+                            </a>
+
+                            <a class="btn-social mail" id="share-mail" href="#" title="Condividi via Email">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                                <span class="social-label">Email</span>
+                            </a>
+
+                            <a class="btn-social facebook" id="share-facebook" href="#" target="_blank" rel="noopener noreferrer" title="Condividi su Facebook">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                                <span class="social-label">Facebook</span>
+                            </a>
+
+                            <a class="btn-social linkedin" id="share-linkedin" href="#" target="_blank" rel="noopener noreferrer" title="Condividi su LinkedIn">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                                <span class="social-label">LinkedIn</span>
+                            </a>
+
+                            <button type="button" class="btn-social copy" onclick="copyAppLink()" title="Copia link">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                                <span class="social-label">Copia link</span>
+                            </button>
+
+                            <span id="share-feedback" class="share-feedback"></span>
+                        </div>
                     </div>
-                    <p>Grazie per il tuo interesse!</p>
+
+                    <div class="contact-highlight" style="margin-top: 16px;">
+                        <strong>Michele Spina</strong><br>
+                        <i class="fas fa-envelope"></i> <a href="mailto:michelespinabox@gmail.com">michelespinabox@gmail.com</a><br>
+                        <i class="fas fa-globe"></i> <a href="https://mkboxself.github.io/GOSELF/" target="_blank" rel="noopener noreferrer">https://mkboxself.github.io/GOSELF/</a>
+                    </div>
+                    <p style="margin-top: 12px;">Grazie per il tuo interesse! 🙏</p>
                 </div>
                 <div style="padding: 15px; text-align: right; border-top: 1px solid var(--medium-gray);">
                     <button class="btn btn-primary" onclick="hideSostienimiModal()">Chiudi</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NUOVO: MODAL QR CODE PAYPAL -->
+        <div id="qrModalOverlay" class="qr-modal-overlay" onclick="if(event.target===this) closeQrModal()">
+            <div class="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
+                <div class="qr-modal-header">
+                    <h3 id="qr-modal-title"><i class="fas fa-qrcode"></i> Supporta MK_GO_FUEL_SELF</h3>
+                    <button class="qr-close-btn" onclick="closeQrModal()" title="Chiudi" aria-label="Chiudi">✕</button>
+                </div>
+                <div class="qr-modal-body">
+                    <p class="qr-owner">Michele Spina</p>
+                    <div class="qr-code-wrapper" id="qr-code-wrapper">
+                        <div class="qr-modal-loading" id="qr-modal-loading">Generazione QR…</div>
+                    </div>
+                    <p class="qr-hint">Inquadra il QR code con l'app <strong>PayPal</strong> del tuo smartphone per offrirmi un caffè ☕</p>
+                </div>
+                <div class="qr-modal-footer">
+                    <a href="https://www.paypal.com/qrcodes/p2pqrc/XGG2DHDAHXMMQ" target="_blank" rel="noopener noreferrer" class="btn-qr-show">
+                        🔗 Apri link PayPal
+                    </a>
+                    <button class="btn btn-secondary" onclick="closeQrModal()">Chiudi</button>
                 </div>
             </div>
         </div>
@@ -1081,7 +1455,6 @@
                 </div>
             </div>
         </div>
-
         <!-- MODIFICA: Aggiunta classe "collapsed" per nascondere la sidebar all'avvio -->
         <div class="sidebar collapsed" id="sidebar">
             <div class="sidebar-content">
@@ -1159,10 +1532,10 @@
         </div>
         <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()"><i class="fas fa-cog" id="toggleIcon"></i></button>
         <div id="map"></div>
+        <!-- MODIFICA 2: Rimosso layer "Standard" originale, "Voyager" ora è "Standard" -->
         <div class="layer-control">
             <button id="standardBtn" onclick="setMapLayer('standard')" class="active"><i class="fas fa-map"></i> Standard</button>
             <button id="satelliteBtn" onclick="setMapLayer('satellite')"><i class="fas fa-satellite"></i> Satellite</button>
-            <button id="voyagerBtn" onclick="setMapLayer('voyager')"><i class="fas fa-palette"></i> Voyager</button>
             <button id="darkBtn" onclick="setMapLayer('dark')"><i class="fas fa-moon"></i> Dark</button>
             <button id="topoBtn" onclick="setMapLayer('topo')"><i class="fas fa-mountain"></i> Topo</button>
             <button id="googleTrafficBtn" onclick="toggleTrafficLayer()"><i class="fas fa-car"></i></button>
@@ -1264,7 +1637,6 @@
                 <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px;">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" id="layerCbStandard" checked> Standard</label>
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" id="layerCbSatellite" checked> Satellite</label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" id="layerCbVoyager" checked> Voyager</label>
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" id="layerCbDark" checked> Dark</label>
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" id="layerCbTopo" checked> Topo</label>
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;"><input type="checkbox" id="layerCbTraffic" checked> Traffico (Google)</label>
@@ -1274,7 +1646,6 @@
                     <select id="defaultLayerSelect" class="form-control" style="width:auto; min-width:150px;">
                         <option value="standard">Standard</option>
                         <option value="satellite">Satellite</option>
-                        <option value="voyager">Voyager</option>
                         <option value="dark">Dark</option>
                         <option value="topo">Topo</option>
                     </select>
@@ -1608,7 +1979,200 @@
                 menuWasOpen = false;
             }
         };
-        
+
+        // ==================== NUOVO: QR CODE PAYPAL + SHARE SOCIAL ====================
+        const PAYPAL_URL = 'https://www.paypal.com/qrcodes/p2pqrc/XGG2DHDAHXMMQ';
+        const APP_SHARE_URL = 'https://mkboxself.github.io/GOSELF/';
+        let qrRendered = false;
+
+        function openQrModal() {
+            const overlay = document.getElementById('qrModalOverlay');
+            if (!overlay) return;
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            if (!qrRendered) renderPayPalQr();
+        }
+
+        function closeQrModal() {
+            const overlay = document.getElementById('qrModalOverlay');
+            if (overlay) overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function renderPayPalQr() {
+            const wrapper = document.getElementById('qr-code-wrapper');
+            const loading = document.getElementById('qr-modal-loading');
+            if (!wrapper) return;
+
+            if (typeof QRCode !== 'undefined') {
+                try {
+                    wrapper.innerHTML = '';
+                    new QRCode(wrapper, {
+                        text: PAYPAL_URL,
+                        width: 240,
+                        height: 240,
+                        colorDark: '#000000',
+                        colorLight: '#ffffff',
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    qrRendered = true;
+                    return;
+                } catch (e) {
+                    console.warn('QRCode.js fallita, uso fallback API:', e);
+                }
+            }
+
+            // Fallback: API esterna
+            try {
+                if (loading) loading.textContent = 'Generazione QR (fallback)…';
+                const img = document.createElement('img');
+                img.alt = 'QR Code PayPal — Michele Spina';
+                img.width = 240;
+                img.height = 240;
+                img.crossOrigin = 'anonymous';
+                img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&data=' +
+                          encodeURIComponent(PAYPAL_URL);
+
+                img.onload = () => {
+                    wrapper.innerHTML = '';
+                    wrapper.appendChild(img);
+                    qrRendered = true;
+                };
+                img.onerror = () => {
+                    if (loading) {
+                        loading.innerHTML = 'Impossibile generare il QR.<br>Usa il link PayPal qui sotto.';
+                    }
+                };
+                wrapper.appendChild(img);
+            } catch (e) {
+                console.error('Fallback QR fallito:', e);
+                if (loading) loading.textContent = 'Errore QR. Usa il link PayPal qui sotto.';
+            }
+        }
+
+        function getAppShareUrl() {
+            try {
+                if (window.location.href.startsWith('http')) {
+                    return window.location.origin + window.location.pathname;
+                }
+            } catch (_) {}
+            return APP_SHARE_URL;
+        }
+
+        function getAppShareTitle() {
+            return 'MK_GO_FUEL_SELF — Mappa prezzi carburante self';
+        }
+
+        function getAppShareText() {
+            return '⛽ MK_GO_FUEL_SELF: mappa interattiva dei prezzi carburante self in Italia. ' +
+                   'Filtri avanzati, percorsi ottimizzati, confronto carte carburante. ' +
+                   '100% gratuito. Provalo:';
+        }
+
+        function buildShareLinks() {
+            const url = getAppShareUrl();
+            const title = getAppShareTitle();
+            const text = getAppShareText();
+            const fullText = text + ' ' + url;
+            const enc = encodeURIComponent;
+
+            const links = {
+                whatsapp: `https://wa.me/?text=${enc(fullText)}`,
+                telegram: `https://t.me/share/url?url=${enc(url)}&text=${enc(text)}`,
+                mail:     `mailto:?subject=${enc(title)}&body=${enc(text + '\n\n' + url)}`,
+                facebook: `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}&quote=${enc(text)}`,
+                linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`
+            };
+
+            const map = {
+                whatsapp: 'share-whatsapp',
+                telegram: 'share-telegram',
+                mail:     'share-mail',
+                facebook: 'share-facebook',
+                linkedin: 'share-linkedin'
+            };
+
+            Object.keys(map).forEach(key => {
+                const el = document.getElementById(map[key]);
+                if (el && links[key]) {
+                    el.href = links[key];
+                    if (key === 'mail') {
+                        el.removeAttribute('target');
+                    } else {
+                        el.setAttribute('target', '_blank');
+                        el.setAttribute('rel', 'noopener noreferrer');
+                    }
+                }
+            });
+        }
+
+        async function shareNative() {
+            const url = getAppShareUrl();
+            const title = getAppShareTitle();
+            const text = getAppShareText();
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title, text, url });
+                    showShareFeedback('✅ Condivisione avviata!');
+                    return;
+                } catch (e) {
+                    if (e && e.name === 'AbortError') return;
+                    console.warn('Web Share fallito, provo fallback:', e);
+                }
+            }
+            copyAppLink();
+        }
+
+        function copyAppLink() {
+            const url = getAppShareUrl();
+            const done = () => showShareFeedback('📋 Link copiato negli appunti!');
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(done).catch(() => {
+                    fallbackCopyUrl(url, done);
+                });
+            } else {
+                fallbackCopyUrl(url, done);
+            }
+        }
+
+        function fallbackCopyUrl(url, cb) {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = url;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, 999999);
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (ok && typeof cb === 'function') cb();
+                else alert('Impossibile copiare automaticamente. Link:\n' + url);
+            } catch (e) {
+                alert('Impossibile copiare automaticamente. Link:\n' + url);
+            }
+        }
+
+        function showShareFeedback(msg) {
+            const el = document.getElementById('share-feedback');
+            if (!el) return;
+            el.textContent = msg;
+            el.classList.add('visible');
+            clearTimeout(el._fbTimer);
+            el._fbTimer = setTimeout(() => {
+                el.classList.remove('visible');
+            }, 2200);
+        }
+
+        // Inizializza i link di condivisione al caricamento
+        document.addEventListener('DOMContentLoaded', function() {
+            buildShareLinks();
+            // Ri-esegui in caso di popstate
+            window.addEventListener('popstate', buildShareLinks);
+        });
+
         // ==================== VARIABILI GLOBALI ====================
         let map;
         let markerCluster;
@@ -1698,20 +2262,17 @@
         };
 
         // ==================== MAP LAYERS ====================
+        // MODIFICA 2: Il layer "standard" ora usa i tile di quello che era "Voyager" (OpenStreetMap DE).
+        // Il vecchio layer "standard" (OpenStreetMap classico) e il layer "voyager" sono stati rimossi.
         const mapLayers = {
-            standard: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19,
-                minZoom: 5
+            standard: L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> DE',
+                maxZoom: 18
             }),
             satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
                 maxZoom: 19,
                 crossOrigin: true
-            }),
-            voyager: L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> DE',
-                maxZoom: 18
             }),
             dark: L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, HERE, MapmyIndia, and the GIS User Community',
@@ -1748,7 +2309,6 @@
                     const prefs = JSON.parse(saved);
                     document.getElementById('standardBtn').style.display = prefs.standard ? 'block' : 'none';
                     document.getElementById('satelliteBtn').style.display = prefs.satellite ? 'block' : 'none';
-                    document.getElementById('voyagerBtn').style.display = prefs.voyager ? 'block' : 'none';
                     document.getElementById('darkBtn').style.display = prefs.dark ? 'block' : 'none';
                     document.getElementById('topoBtn').style.display = prefs.topo ? 'block' : 'none';
                     document.getElementById('googleTrafficBtn').style.display = prefs.traffic ? 'block' : 'none';
@@ -1763,7 +2323,6 @@
             const prefs = {
                 standard: document.getElementById('layerCbStandard').checked,
                 satellite: document.getElementById('layerCbSatellite').checked,
-                voyager: document.getElementById('layerCbVoyager').checked,
                 dark: document.getElementById('layerCbDark').checked,
                 topo: document.getElementById('layerCbTopo').checked,
                 traffic: document.getElementById('layerCbTraffic').checked,
@@ -1772,7 +2331,6 @@
             localStorage.setItem(STORAGE_KEYS.LAYER_PREFERENCES, JSON.stringify(prefs));
             document.getElementById('standardBtn').style.display = prefs.standard ? 'block' : 'none';
             document.getElementById('satelliteBtn').style.display = prefs.satellite ? 'block' : 'none';
-            document.getElementById('voyagerBtn').style.display = prefs.voyager ? 'block' : 'none';
             document.getElementById('darkBtn').style.display = prefs.dark ? 'block' : 'none';
             document.getElementById('topoBtn').style.display = prefs.topo ? 'block' : 'none';
             document.getElementById('googleTrafficBtn').style.display = prefs.traffic ? 'block' : 'none';
@@ -1785,7 +2343,6 @@
         function resetLayerPreferences() {
             document.getElementById('layerCbStandard').checked = true;
             document.getElementById('layerCbSatellite').checked = true;
-            document.getElementById('layerCbVoyager').checked = true;
             document.getElementById('layerCbDark').checked = true;
             document.getElementById('layerCbTopo').checked = true;
             document.getElementById('layerCbTraffic').checked = true;
@@ -1800,7 +2357,6 @@
                     const prefs = JSON.parse(saved);
                     document.getElementById('layerCbStandard').checked = prefs.standard !== false;
                     document.getElementById('layerCbSatellite').checked = prefs.satellite !== false;
-                    document.getElementById('layerCbVoyager').checked = prefs.voyager !== false;
                     document.getElementById('layerCbDark').checked = prefs.dark !== false;
                     document.getElementById('layerCbTopo').checked = prefs.topo !== false;
                     document.getElementById('layerCbTraffic').checked = prefs.traffic !== false;
@@ -2116,6 +2672,7 @@
             }
         }
 
+        // MODIFICA 2: setMapLayer - rimossi 'voyager', 'standard' ora è il vecchio Voyager
         function setMapLayer(layerName) {
             if (!map || !mapLayers[layerName]) return;
             if (layerName === 'tomtomTraffic' && !tomtomApiKey) {
@@ -2129,7 +2686,6 @@
             const buttonIds = {
                 'standard': 'standardBtn',
                 'satellite': 'satelliteBtn',
-                'voyager': 'voyagerBtn',
                 'dark': 'darkBtn',
                 'topo': 'topoBtn'
             };
@@ -2144,7 +2700,6 @@
             switch(layerName) {
                 case 'standard': layerDisplayName = 'Standard'; break;
                 case 'satellite': layerDisplayName = 'Satellite'; break;
-                case 'voyager': layerDisplayName = 'Voyager'; break;
                 case 'dark': layerDisplayName = 'Scura'; break;
                 case 'topo': layerDisplayName = 'Topografica'; break;
                 default: layerDisplayName = layerName;
