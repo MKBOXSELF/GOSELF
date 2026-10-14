@@ -5,14 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MK_GO_FUEL_SELF</title>
 
-    <!-- ============================================================
-         MODIFICA: FAVICON + APPLE TOUCH ICON con goself.jpeg
-         ============================================================ -->
     <link rel="icon" type="image/jpeg" href="goself.jpeg">
     <link rel="shortcut icon" type="image/jpeg" href="goself.jpeg">
     <link rel="apple-touch-icon" href="goself.jpeg">
 
-    <!-- Preconnect per i domini dei tile per velocizzare il caricamento -->
     <link rel="preconnect" href="https://tile.openstreetmap.org">
     <link rel="preconnect" href="https://server.arcgisonline.com">
     <link rel="preconnect" href="https://tile.openstreetmap.de">
@@ -27,7 +23,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- NUOVO: QRCode.js per generazione QR PayPal lato client -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         /* ========== STILI COMPATTI E OTTIMIZZATI ========== */
@@ -37,9 +32,6 @@
         #app { height: 100%; width: 100%; position: relative; display: flex; flex-direction: column; }
         #map { flex: 1; width: 100%; z-index: 1; }
         .app-header { background: var(--primary-blue); color: white; display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); min-height: 44px; }
-        /* ============================================================
-           MODIFICA: .logo aggiornato per ospitare l'immagine goself.jpeg
-           ============================================================ */
         .logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
         .logo img.logo-img {
             height: 34px;
@@ -59,7 +51,6 @@
         .header-btn i { font-size: 13px; }
         .header-btn.box-active { background: var(--accent-orange); }
         .header-btn.nav-active { background: var(--success-green); animation: pulse-green 1.5s infinite; }
-        /* NUOVO: Pulsante Sostieni - effetto cuore pulsante */
         .header-btn.support-btn { background: rgba(255, 100, 100, 0.25); }
         .header-btn.support-btn:hover { background: rgba(255, 100, 100, 0.45); }
         .header-btn.support-btn i { animation: heartbeat 2.4s ease-in-out infinite; }
@@ -70,7 +61,6 @@
             45% { transform: scale(1.15); }
             60% { transform: scale(1); }
         }
-        /* Pulsante Guida Notturna */
         #nightModeBtn {
             background: rgba(255,255,255,0.2);
             border: none;
@@ -78,7 +68,7 @@
             padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
-            display: none; /* nascosto di default, mostrato da JS quando navigatore attivo */
+            display: none;
             align-items: center;
             gap: 3px;
             font-size: 12px;
@@ -326,7 +316,6 @@
         .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 4000; flex-direction: column; gap: 15px; }
         .spinner { width: 40px; height: 40px; border: 4px solid var(--light-gray); border-top: 4px solid var(--primary-blue); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        /* ===== NUOVI STILI PER PROGRESS BAR CARICAMENTO ===== */
         .loading-content {
             display: flex;
             flex-direction: column;
@@ -377,16 +366,18 @@
         .leaflet-popup-content { margin: 0; min-width: 240px; }
         .station-marker { background: transparent; border: none; }
         .marker-content { background-color: var(--primary-blue); width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 7px; line-height: 1.1; text-align: center; transition: transform 0.2s; position: relative; }
-        .marker-content:hover { transform: scale(2) !important; z-index: 1000 !important; transition: transform 0.2s ease !important; }
-        .marker-content.cheapest-on-screen:hover { transform: scale(2) !important; animation: none !important; box-shadow: 0 0 15px 2px rgba(255,215,0,0.8) !important; }
+        .marker-content:hover { transform: scale(1.3) !important; z-index: 1000 !important; transition: transform 0.2s ease !important; }
+        .marker-content.cheapest-on-screen:hover { transform: scale(1.3) !important; animation: none !important; box-shadow: 0 0 15px 2px rgba(255,215,0,0.8) !important; }
         .marker-content.favorite { border: 3px solid gold; box-shadow: 0 0 12px gold; transform: scale(1.05); }
         .marker-price { font-size: 8px; font-weight: bold; margin-top: -1px; }
         .marker-currency { font-size: 6px; opacity: 0.9; margin-bottom: -2px; }
         .marker-brand { font-size: 5px; font-weight: normal; text-transform: uppercase; opacity: 0.9; margin-top: -2px; letter-spacing: 0.2px; max-width: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .marker-content.cheapest-on-route { background-color: var(--success-green); border: 3px solid gold; transform: scale(1.1); box-shadow: 0 0 12px gold; }
-        .marker-content.cheapest-on-screen { background-color: var(--success-green); border: 3px solid #ffd700; transform: scale(1.1); box-shadow: 0 0 15px 2px rgba(255,215,0,0.8); animation: pulse-gold 1.2s infinite; }
+        /* MODIFICA: le icone delle 5 stazioni più convenienti sono ora ingrandite (scale 2, stessa dimensione dell'hover) */
+        .marker-content.cheapest-on-screen { background-color: var(--success-green); border: 3px solid #ffd700; transform: scale(1.300:23 15/10/2026); box-shadow: 0 0 15px 2px rgba(255,215,0,0.8); animation: pulse-gold 1.2s infinite; z-index: 1000; }
         .rank-badge { position: absolute; top: -6px; right: -6px; background: gold; color: #333; font-weight: bold; font-size: 8px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 2; }
-        @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.7); } 70% { box-shadow: 0 0 0 12px rgba(255,215,0,0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,215,0,0); } }
+        /* MODIFICA: rimosso "transform: scale(1)" dal 100% così il marker mantiene la scala ingrandita (scale 2) durante l'animazione */
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.7); } 70% { box-shadow: 0 0 0 12px rgba(255,215,0,0); } 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); } }
         .marker-content.has-message { position: relative; }
         .marker-message-icon { position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid white; }
         .marker-message-icon.allert { background: var(--alert-red); color: white; }
@@ -623,7 +614,6 @@
             .cookie-banner-content { flex-direction: column; text-align: center; }
             .cookie-buttons { justify-content: center; }
         }
-        /* Stili per i controlli zoom navigatore - spostati in basso a sinistra */
         .nav-zoom-controls {
             position: fixed;
             bottom: 100px;
@@ -656,7 +646,6 @@
         .nav-zoom-btn.active { background: var(--accent-orange); box-shadow: 0 0 5px rgba(0,0,0,0.2); }
         .nav-zoom-btn i { margin-right: 3px; }
 
-        /* ===== STILI MODALITÀ NOTTURNA (night-mode) ===== */
         body.night-mode .app-header {
             background: #1a1a2e;
             box-shadow: 0 2px 10px rgba(0,0,0,0.8);
@@ -896,7 +885,6 @@
         body.night-mode .menu-item i {
             color: #88ccff;
         }
-        /* ===== NIGHT MODE per il loading overlay ===== */
         body.night-mode .loading-overlay {
             background: rgba(20,20,30,0.95);
         }
@@ -914,9 +902,6 @@
             color: #88ccff;
         }
 
-        /* ============================================================
-           NUOVO: PAYPAL SUPPORT + QR MODAL + SHARE SOCIAL
-           ============================================================ */
         .paypal-support {
             margin: 18px 0 0;
             padding: 16px 18px;
@@ -971,7 +956,6 @@
             transform: translateY(-2px) scale(1.02);
             box-shadow: 0 8px 22px rgba(40, 167, 69, 0.6), 0 0 26px rgba(0, 153, 204, 0.4);
         }
-        /* QR MODAL */
         .qr-modal-overlay {
             display: none;
             position: fixed;
@@ -1084,7 +1068,6 @@
             font-size: 12px;
             padding: 9px 16px;
         }
-        /* SHARE SOCIAL */
         .share-social-row {
             display: flex;
             justify-content: center;
@@ -1168,10 +1151,6 @@
         }
         .share-feedback.visible { opacity: 1; }
 
-        /* ============================================================
-           MODIFICA 1: TESTO BIANCO NEI PULSANTI DELLA MODALE SOSTIENIMI
-           Forza il colore bianco su tutti i pulsanti e i loro contenuti
-           ============================================================ */
         #sostienimiModal .paypal-btn,
         #sostienimiModal .paypal-btn span,
         #sostienimiModal .paypal-btn i,
@@ -1189,7 +1168,6 @@
             fill: #ffffff !important;
         }
 
-        /* NIGHT MODE per nuovi elementi */
         body.night-mode .qr-modal { background: #1e1e2f; color: #ddd; }
         body.night-mode .qr-modal-header { background: #0d0d1a; }
         body.night-mode .qr-modal-footer { background: #25253a; border-color: #444; }
@@ -1206,9 +1184,6 @@
             border-color: #444;
         }
 
-        /* ============================================================
-           NUOVO: Badge indicatore cache (opzionale, mostrato nell'header)
-           ============================================================ */
         .cache-badge {
             position: fixed;
             top: 50px;
@@ -1237,12 +1212,6 @@
         <header class="app-header">
             <div style="display: flex; align-items: center; gap: 5px;">
                 <button class="menu-btn" id="menuToggleBtn" onclick="openMenuModal()"><i class="fas fa-bars"></i></button>
-                <!-- ============================================================
-                     MODIFICA: LOGO HEADER con immagine goself.jpeg
-                     L'immagine sostituisce l'icona Font Awesome fa-gas-pump.
-                     La scritta testuale resta per coerenza col branding.
-                     Il click sul logo continua a funzionare (7 click → sblocca box).
-                     ============================================================ -->
                 <div class="logo">
                     <img src="goself.jpeg" alt="GOSELF Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
                     <i class="fas fa-gas-pump" style="display:none;"></i>
@@ -1250,21 +1219,15 @@
                 </div>
             </div>
             <div class="header-right">
-                <!-- Pulsante Modalità Navigatore -->
                 <button class="header-btn" id="navigatorBtn" onclick="toggleNavigatorMode()">
                     <i class="fas fa-satellite-dish"></i><span>Navigatore</span>
                 </button>
-                <!-- Pulsante Guida Notturna (visibile solo quando navigatore attivo) -->
                 <button id="nightModeBtn" onclick="toggleNightMode()">
                     <i class="fas fa-moon"></i><span>Guida Notturna</span>
                 </button>
-                <!-- NUOVO: Pulsante Sostieni (apre la modal Sostienimi) -->
                 <button class="header-btn support-btn" onclick="showSostienimiModal()" title="Sostieni il progetto">
                     <i class="fas fa-heart" style="color: #ffb3c1;"></i><span>Sostieni</span>
                 </button>
-                <!-- ============================================================
-                     NUOVO: Pulsante "Ricarica dati" - forza il refresh della cache JSON
-                     ============================================================ -->
                 <button class="header-btn" id="forceRefreshDataBtn" onclick="forceRefreshData()" title="Ricarica dati dal server (ignora cache 60s)">
                     <i class="fas fa-cloud-download-alt"></i><span>Ricarica dati</span>
                 </button>
@@ -1276,20 +1239,17 @@
             </div>
         </header>
         
-        <!-- ============================================================
-             NUOVO: Badge indicatore cache attiva
-             ============================================================ -->
         <div id="cacheBadge" class="cache-badge">
             <i class="fas fa-bolt"></i>
             <span id="cacheBadgeText">Cache attiva</span>
         </div>
         
-        <!-- MODAL MENU HAMBURGER -->
-        <div class="modal hidden" id="menuModal" onclick="if(event.target === this) hideMenuModal()">
+        <!-- MODIFICA: #menuModal ora chiude chiamando closeMenuAndShowSostienimi() -->
+        <div class="modal hidden" id="menuModal" onclick="if(event.target === this) closeMenuAndShowSostienimi()">
             <div class="modal-content" style="max-width: 400px;">
                 <div class="modal-header">
                     <h3><i class="fas fa-bars"></i> Menu</h3>
-                    <button class="modal-close-btn" onclick="hideMenuModal()"><i class="fas fa-times"></i></button>
+                    <button class="modal-close-btn" onclick="closeMenuAndShowSostienimi()"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body" style="padding: 0;">
                     <div class="menu-item" onclick="showReadmeModal()"><i class="fas fa-info-circle"></i> README</div>
@@ -1302,12 +1262,12 @@
             </div>
         </div>
         
-        <!-- MODAL README -->
-        <div class="modal hidden" id="readmeModal" onclick="if(event.target === this) hideReadmeModal()">
+        <!-- MODIFICA: #readmeModal ora chiude chiamando closeReadmeAndShowSostienimi() su tutti i pulsanti di chiusura -->
+        <div class="modal hidden" id="readmeModal" onclick="if(event.target === this) closeReadmeAndShowSostienimi()">
             <div class="modal-content" style="max-width: 700px;">
                 <div class="modal-header">
                     <h3><i class="fas fa-info-circle"></i> README - Informazioni (MK_GO_FUEL_SELF)</h3>
-                    <button class="modal-close-btn" onclick="hideReadmeModal()"><i class="fas fa-times"></i></button>
+                    <button class="modal-close-btn" onclick="closeReadmeAndShowSostienimi()"><i class="fas fa-times"></i></button>
                 </div>
                 <div class="modal-body info-modal-content">
                     <p>Questa applicazione web avanzata è uno strumento progettato per la gestione e la mappatura in tempo reale dei prezzi del carburante (Self). La piattaforma permette di ottimizzare i costi di trasporto attraverso una pianificazione intelligente dei percorsi e un monitoraggio costante della rete distributiva.</p>
@@ -1343,7 +1303,7 @@
                     </div>
                 </div>
                 <div style="padding: 15px; text-align: right; border-top: 1px solid var(--medium-gray);">
-                    <button class="btn btn-primary" onclick="hideReadmeModal()">Chiudi</button>
+                    <button class="btn btn-primary" onclick="closeReadmeAndShowSostienimi()">Chiudi</button>
                 </div>
             </div>
         </div>
@@ -1404,7 +1364,7 @@
             </div>
         </div>
         
-        <!-- MODAL SOSTIENIMI - ARRICCHITA con PayPal, QR Code e pulsanti Social -->
+        <!-- MODAL SOSTIENIMI -->
         <div class="modal hidden" id="sostienimiModal" onclick="if(event.target === this) hideSostienimiModal()">
             <div class="modal-content" style="max-width: 620px;">
                 <div class="modal-header">
@@ -1415,7 +1375,6 @@
                     <p>Se apprezzi questo progetto e vuoi supportarne lo sviluppo, il mantenimento e le nuove funzionalità, puoi offrirmi un caffè! ☕</p>
                     <p>Ogni supporto è prezioso per migliorare la piattaforma e offrire nuovi servizi.</p>
 
-                    <!-- SEZIONE PAYPAL (come da foto) -->
                     <div class="paypal-support">
                         <a href="https://www.paypal.com/qrcodes/p2pqrc/XGG2DHDAHXMMQ"
                            target="_blank" rel="noopener noreferrer" class="paypal-btn">
@@ -1425,7 +1384,6 @@
                             📱 Mostra QR Code PayPal
                         </button>
 
-                        <!-- PULSANTI SOCIAL (come da foto) -->
                         <div class="share-social-row" style="width:100%;">
                             <span class="share-label">💬 Fai conoscere MK_GO_FUEL_SELF</span>
 
@@ -1481,7 +1439,7 @@
             </div>
         </div>
 
-        <!-- NUOVO: MODAL QR CODE PAYPAL -->
+        <!-- MODAL QR CODE PAYPAL -->
         <div id="qrModalOverlay" class="qr-modal-overlay" onclick="if(event.target===this) closeQrModal()">
             <div class="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
                 <div class="qr-modal-header">
@@ -1525,10 +1483,8 @@
                 </div>
             </div>
         </div>
-        <!-- MODIFICA: Aggiunta classe "collapsed" per nascondere la sidebar all'avvio -->
         <div class="sidebar collapsed" id="sidebar">
             <div class="sidebar-content">
-                <!-- RIMOSSO: Pianifica percorso dalla sidebar -->
                 <div class="draw-zone-panel">
                     <div class="draw-zone-header" onclick="toggleDrawZone()"><h4><i class="fas fa-draw-polygon"></i> Disegna la Zona</h4><i class="fas fa-chevron-down" id="drawZoneArrow"></i></div>
                     <div class="draw-zone-content" id="drawZoneContent" style="display: none;">
@@ -1602,7 +1558,6 @@
         </div>
         <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()"><i class="fas fa-cog" id="toggleIcon"></i></button>
         <div id="map"></div>
-        <!-- MODIFICA 2: Rimosso layer "Standard" originale, "Voyager" ora è "Standard" -->
         <div class="layer-control">
             <button id="standardBtn" onclick="setMapLayer('standard')" class="active"><i class="fas fa-map"></i> Standard</button>
             <button id="satelliteBtn" onclick="setMapLayer('satellite')"><i class="fas fa-satellite"></i> Satellite</button>
@@ -1618,7 +1573,6 @@
             </div>
             <div id="locationSuggestions" class="suggestions" style="display: none; max-height: 200px; overflow-y: auto; border-top: 1px solid var(--medium-gray);"></div>
         </div>
-        <!-- AGGIUNTO: Icona Percorso come prima nel draw-tools-container -->
         <div class="draw-tools-container" id="mapDrawTools">
             <button class="draw-tool-btn" id="mapRouteBtn" onclick="showRouteModal()"><i class="fas fa-route"></i></button>
             <button class="draw-tool-btn" id="mapPolygonBtn" onclick="activateDrawingTool('polygon')"><i class="fas fa-draw-polygon"></i></button>
@@ -1629,7 +1583,6 @@
             <button class="close-route-map-btn" onclick="closeRoutePanel()"><i class="fas fa-times-circle"></i> Chiudi percorso</button>
         </div>
 
-        <!-- Controlli zoom navigatore (3 livelli) - spostati in basso a sinistra -->
         <div id="navZoomControls" class="nav-zoom-controls hidden">
             <button class="nav-zoom-btn" data-zoom="25" onclick="setNavigatorZoom(25)"><i class="fas fa-search-plus"></i> Vicino</button>
             <button class="nav-zoom-btn active" data-zoom="16" onclick="setNavigatorZoom(16)"><i class="fas fa-search"></i> Medio</button>
@@ -1640,7 +1593,6 @@
             <span>© 2026 Spina Michele - Web Creator</span><span class="separator">|</span>
             <span>Tutti i contenuti sono di proprietà esclusiva - Vietato scraping (L.633/41)</span><span class="separator">|</span>
             <span>Dati forniti dal Ministero delle Imprese e del Made in Italy (Mise) - Osservaprezzi Carburanti". </span><span class="separator">|</span>
-            <!-- MODIFICA: collegamento Contattami nel footer ora apre la modale -->
             <span><a href="#" onclick="showContattamiModal(); return false;"><i class="fas fa-envelope"></i> Contattami</a></span><span class="separator">|</span>
             <span><a href="#" id="cookieSettingsLink" class="cookie-settings-link"><i class="fas fa-cookie-bite"></i> Preferenze Cookie</a></span><span class="separator">|</span>
             <span><a href="#" id="privacyPolicyLink" onclick="showPrivacyModal(); return false;"><i class="fas fa-shield-alt"></i> Privacy</a></span>
@@ -1700,7 +1652,6 @@
                 <p style="font-size:10px; color:#666; margin-top:4px;">Per utilizzare il layer traffico TomTom, <a href="https://developer.tomtom.com/" target="_blank">ottieni una chiave gratuita</a> e incollala qui. Poi clicca su "Salva configurazione".</p>
             </div>
             
-            <!-- NUOVA SEZIONE: GESTIONE LAYER MAPPA -->
             <div class="config-section">
                 <div class="config-title"><i class="fas fa-layer-group"></i> Gestione Layer Mappa</div>
                 <p style="font-size:12px; margin-bottom:10px;">Seleziona quali layer mostrare nella barra inferiore e quale layer di default all'avvio.</p>
@@ -1744,7 +1695,6 @@
             </div>
             <div style="display: flex; gap: 10px; margin-top: 10px;"><button class="btn btn-secondary" style="flex: 1;" onclick="hideConfigModal()">Chiudi</button></div>
         </div></div></div>
-        <!-- MODAL PRIVACY POLICY -->
         <div class="modal hidden" id="privacyModal" onclick="if(event.target === this) hidePrivacyModal()">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1789,7 +1739,6 @@
                 </div>
             </div>
         </div>
-        <!-- MODIFICA: Loading overlay con progress bar e percentuale -->
         <div class="loading-overlay hidden" id="loadingOverlay">
             <div class="loading-content">
                 <div class="spinner"></div>
@@ -1802,7 +1751,6 @@
         </div>
     </div>
 
-    <!-- Cookie Banner HTML -->
     <div id="cookieBanner" class="cookie-banner">
         <div class="cookie-banner-content">
             <div class="cookie-text">
@@ -1819,7 +1767,6 @@
 
     <script>
         // ==================== OTTIMIZZAZIONI PERFORMANCE ====================
-        // Debounce e Throttle per ridurre i ricalcoli
         function debounce(func, wait) {
             let timeout;
             return function(...args) {
@@ -1969,6 +1916,24 @@
             document.getElementById('menuModal').classList.add('hidden');
             menuWasOpen = false;
         }
+
+        // ============================================================
+        // MODIFICA 1a: nuova funzione che chiude il MENU e apre SOSTIENIMI
+        // ============================================================
+        function closeMenuAndShowSostienimi() {
+            document.getElementById('menuModal').classList.add('hidden');
+            menuWasOpen = false;
+            document.getElementById('sostienimiModal').classList.remove('hidden');
+        }
+
+        // ============================================================
+        // MODIFICA 1b: nuova funzione che chiude il README e apre SOSTIENIMI
+        // ============================================================
+        function closeReadmeAndShowSostienimi() {
+            document.getElementById('readmeModal').classList.add('hidden');
+            menuWasOpen = false;
+            document.getElementById('sostienimiModal').classList.remove('hidden');
+        }
         
         const originalShowReadme = showReadmeModal;
         showReadmeModal = function() {
@@ -2092,7 +2057,6 @@
                 }
             }
 
-            // Fallback: API esterna
             try {
                 if (loading) loading.textContent = 'Generazione QR (fallback)…';
                 const img = document.createElement('img');
@@ -2236,10 +2200,8 @@
             }, 2200);
         }
 
-        // Inizializza i link di condivisione al caricamento
         document.addEventListener('DOMContentLoaded', function() {
             buildShareLinks();
-            // Ri-esegui in caso di popstate
             window.addEventListener('popstate', buildShareLinks);
         });
 
@@ -2312,14 +2274,10 @@
         let isFreehandDrawing = false;
         let freehandMouseDown = false;
         
-        // ===== VARIABILI GLOBALI PER IL PROGRESSO DI CARICAMENTO =====
         let loadingProgressValue = 0;
         let loadingProgressInterval = null;
 
-        // ============================================================
-        // NUOVO: COSTANTI CACHE DATI (60 secondi)
-        // ============================================================
-        const DATA_CACHE_TTL_MS = 60000; // 60 secondi di validità cache
+        const DATA_CACHE_TTL_MS = 60000;
 
         const STORAGE_KEYS = {
             FAVORITES: 'fuelMapper_favorites',
@@ -2334,13 +2292,9 @@
             TRAFFIC_STATE: 'fuelMapper_trafficState',
             LAYER_PREFERENCES: 'fuelMapper_layerPreferences',
             LOCATION_PERMISSION_GRANTED: 'fuelMapper_locationPermissionGranted',
-            // NUOVO: chiave per la cache dei dati JSON
             DATA_CACHE: 'fuelMapper_dataCache'
         };
 
-        // ==================== MAP LAYERS ====================
-        // MODIFICA 2: Il layer "standard" ora usa i tile di quello che era "Voyager" (OpenStreetMap DE).
-        // Il vecchio layer "standard" (OpenStreetMap classico) e il layer "voyager" sono stati rimossi.
         const mapLayers = {
             standard: L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> DE',
@@ -2378,7 +2332,6 @@
             })
         };
 
-        // ==================== LAYER PREFERENCES ====================
         function loadLayerPreferences() {
             const saved = localStorage.getItem(STORAGE_KEYS.LAYER_PREFERENCES);
             if (saved) {
@@ -2442,7 +2395,6 @@
             }
         }
 
-        // ==================== INIT ====================
         document.addEventListener('DOMContentLoaded', function() {
             loadSavedConfig();
             loadLayerPreferences();
@@ -2472,7 +2424,6 @@
                 updateLoadingProgress(10, 'Inizializzazione mappa...');
                 initMap(); 
                 updateLoadingProgress(20, 'Connessione al server dati...');
-                // Chiamata iniziale SENZA force refresh: se la cache è valida (60s) verrà usata
                 loadDataFromGoogleSheet(); 
                 const locationPermission = localStorage.getItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED);
                 const skipGeo = sessionStorage.getItem('skip_geolocation_on_load');
@@ -2750,7 +2701,6 @@
             }
         }
 
-        // MODIFICA 2: setMapLayer - rimossi 'voyager', 'standard' ora è il vecchio Voyager
         function setMapLayer(layerName) {
             if (!map || !mapLayers[layerName]) return;
             if (layerName === 'tomtomTraffic' && !tomtomApiKey) {
@@ -2836,7 +2786,6 @@
                 map.addLayer(markerCluster);
                 highlightedMarkersLayer = L.layerGroup().addTo(map);
                 map.on('click', handleMapClickForNewStation);
-                // APPLICAZIONE DEL THROTTLE per ridurre i ricalcoli durante lo zoom/trascinamento
                 const throttledDisplay = throttle(function() { 
                     if (filteredStations.length > 0) displayStations(); 
                 }, 250);
@@ -3368,7 +3317,6 @@
 
         function toggleFavoriteMode() { favoriteModeActive = !favoriteModeActive; updateConfigModal(); applyFilters(); showToast(`Modalità preferiti ${favoriteModeActive ? 'attivata' : 'disattivata'}`, 'success'); }
 
-        // ========== DRAWING ZONE ==========
         function activateDrawingTool(mode) {
             if (drawingActive && drawingMode === mode) {
                 stopDrawing();
@@ -3733,15 +3681,6 @@
             return Math.abs(area * R * R / 2 * Math.PI / 180) / 100;
         }
 
-        // ==================== DATA LOAD ====================
-        // ============================================================
-        // NUOVO: FUNZIONI HELPER PER LA CACHE DATI (60 secondi)
-        // ============================================================
-
-        /**
-         * Legge la cache dei dati dal localStorage.
-         * Ritorna null se assente, corrotta o scaduta (>60s).
-         */
         function getCachedData() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEYS.DATA_CACHE);
@@ -3762,9 +3701,6 @@
             }
         }
 
-        /**
-         * Salva i dati nella cache con timestamp corrente.
-         */
         function saveDataCache(stationsToCache) {
             try {
                 const cacheObj = {
@@ -3774,14 +3710,10 @@
                 localStorage.setItem(STORAGE_KEYS.DATA_CACHE, JSON.stringify(cacheObj));
                 console.log(`[Cache] Salvate ${stationsToCache.length} stazioni (valide per ${DATA_CACHE_TTL_MS/1000}s)`);
             } catch (e) {
-                // QuotaExceededError: la cache è troppo grande per localStorage
                 console.warn('[Cache] Errore salvataggio cache (possibile quota superata):', e);
             }
         }
 
-        /**
-         * Elimina la cache dei dati.
-         */
         function clearDataCache() {
             try {
                 localStorage.removeItem(STORAGE_KEYS.DATA_CACHE);
@@ -3789,9 +3721,6 @@
             } catch (e) { /* ignore */ }
         }
 
-        /**
-         * Mostra il badge indicatore dello stato cache.
-         */
         function showCacheBadge(text, isWarning = false) {
             const badge = document.getElementById('cacheBadge');
             const badgeText = document.getElementById('cacheBadgeText');
@@ -3806,10 +3735,6 @@
             }, 3500);
         }
 
-        /**
-         * Applica i dati delle stazioni ricevuti (da cache o da server):
-         * aggiorna variabili globali, filtri, marker sulla mappa.
-         */
         function processStationsData(newStations, fromCache = false) {
             stations = newStations;
             filteredStations = [...stations];
@@ -3825,14 +3750,10 @@
             setInitialDefaultSelections();
         }
 
-        // ===== FUNZIONE MODIFICATA: gestisce cache 60s + progressivo caricamento =====
         function loadDataFromGoogleSheet(forceRefresh = false) {
             showLoading('Connessione al server in corso...');
             updateLoadingProgress(20, 'Connessione al server in corso...');
             
-            // ============================================================
-            // NUOVO: CONTROLLO CACHE PRIMA DELLA CHIAMATA AL SERVER
-            // ============================================================
             if (!forceRefresh) {
                 const cached = getCachedData();
                 if (cached) {
@@ -3853,7 +3774,6 @@
                 clearDataCache();
             }
             
-            // Animazione "soft" del progresso mentre attendiamo la risposta del server
             let softProgress = 20;
             if (loadingProgressInterval) clearInterval(loadingProgressInterval);
             loadingProgressInterval = setInterval(() => {
@@ -3920,9 +3840,6 @@
                             newStations.push(station);
                         });
                         if (newStations.length > 0) {
-                            // ============================================================
-                            // NUOVO: salvo la cache con timestamp corrente
-                            // ============================================================
                             saveDataCache(newStations);
                             updateLoadingProgress(80, 'Aggiornamento filtri e opzioni...');
                             processStationsData(newStations, false);
@@ -3939,7 +3856,6 @@
                 .catch(error => {
                     if (loadingProgressInterval) { clearInterval(loadingProgressInterval); loadingProgressInterval = null; }
                     console.error('Errore nel caricamento da Google Apps Script:', error);
-                    // Se c'è una cache scaduta, la uso come fallback
                     try {
                         const raw = localStorage.getItem(STORAGE_KEYS.DATA_CACHE);
                         if (raw) {
@@ -3961,14 +3877,10 @@
                     setTimeout(() => loadSampleData(), 800);
                 })
                 .finally(() => {
-                    // hideLoading dopo un breve delay per mostrare il 100%
                     setTimeout(() => hideLoading(), 400);
                 });
         }
 
-        // ============================================================
-        // NUOVO: FORCE REFRESH (pulsante "Ricarica dati")
-        // ============================================================
         function forceRefreshData() {
             console.log('[Cache] Refresh forzato dall\'utente');
             clearDataCache();
@@ -4011,7 +3923,6 @@
             setInitialDefaultSelections();
         }
 
-        // ==================== GEOLOCATION ====================
         function getCurrentLocation(showMessageOnError = true) {
             if (!navigator.geolocation) {
                 if (showMessageOnError) showToast('❌ Geolocalizzazione non supportata dal browser', 'error');
@@ -4048,12 +3959,12 @@
                     currentLocationMarker = L.marker([currentPosition.lat, currentPosition.lng], { 
                         icon: L.divIcon({ 
                             className: 'current-location-marker', 
-                            html: '<div style="background-color: #28A745; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>', 
+                            html: '<div style="background-color: #28A745; width: 25px; height: 25px; border-radius: 50%; border: 4px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>', 
                             iconSize: [26, 26], 
                             popupAnchor: [0, -13] 
                         }) 
                     }).addTo(map);
-                    currentLocationMarker.bindPopup('La tua posizione').openPopup();
+                    
                     showToast('✅ Posizione aggiornata!', 'success');
                     localStorage.setItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED, 'true');
                     displayStations();
@@ -4087,7 +3998,6 @@
             );
         }
 
-        // ==================== ROUTE ====================
         function toggleStartInput() { const startType = document.querySelector('input[name="startType"]:checked').value; const startInput = document.getElementById('startInput'); startInput.style.display = startType === 'custom' ? 'block' : 'none'; }
         function toggleWaypointInput() { const enabled = document.getElementById('enableWaypoint').checked; const waypointInput = document.getElementById('waypointInput'); waypointInput.disabled = !enabled; if (!enabled) { waypointInput.value = ''; document.getElementById('waypointSuggestions').style.display = 'none'; } }
 
@@ -4268,7 +4178,6 @@
 
         function updateCardPrice(brand, card, value) { if (brandPrices[brand] && brandPrices[brand][card]) { const numValue = value === '' ? '' : parseFloat(value); brandPrices[brand][card].value = numValue; applyFilters(); showToast(`💰 Prezzo aggiornato per ${brand} - ${card}`, 'success'); } }
 
-        // ==================== PRICE RANGE SLIDER ====================
         function initPriceRangeSlider() {
             const minHandle = document.getElementById('minHandle');
             const maxHandle = document.getElementById('maxHandle');
@@ -4291,7 +4200,6 @@
                 document.getElementById('maxPriceLabel').innerText = currentMaxPrice.toFixed(3);
             };
             
-            // USO DEBOUNCE per i movimenti dello slider per ridurre i ricalcoli
             const debouncedApply = debounce(() => { applyFilters(); }, 150);
             
             const onMouseMoveMin = (e) => {
@@ -4410,8 +4318,6 @@
             document.getElementById('maxPriceLabel').innerText = currentMaxPrice.toFixed(3);
         }
 
-        // ==================== FILTERS ====================
-        // Versione debounced di applyFilters per gli slider
         const debouncedApplyFilters = debounce(function() {
             applyFilters();
         }, 200);
@@ -4483,7 +4389,6 @@
 
         function refreshMap() { displayStations(); showToast('🗺️ Mappa aggiornata', 'success'); }
 
-        // ==================== NAVIGATOR MODE ====================
         function toggleNavigatorMode() {
             const btn = document.getElementById('navigatorBtn');
             const nightBtn = document.getElementById('nightModeBtn');
@@ -4641,7 +4546,6 @@
             showToast(`🔍 Zoom impostato a ${zoom}`, 'success');
         }
 
-        // Sovrascrivi applyFilters per gestire il navigatore
         const originalApplyFilters = applyFilters;
         applyFilters = function() {
             if (navigatorModeActive && currentPosition) {
@@ -4651,7 +4555,6 @@
             }
         };
 
-        // ==================== DISPLAY STATIONS ====================
         function displayStations() {
             if (!map) return;
             markerCluster.clearLayers();
@@ -5023,7 +4926,6 @@
         function exportFilteredToExcel() { if (filteredStations.length === 0) { showToast('Nessuna stazione da esportare', 'error'); return; } try { const exportData = filteredStations.map(s => ({ 'Brand': s.brand, 'Nome Impianto': s.name, 'Indirizzo': s.address, 'Comune': s.city, 'Provincia': s.province, 'Latitudine': s.lat, 'Longitudine': s.lng, 'Carburante': s.fuelType, 'Prezzo': s.price, 'Tipo Prezzo': s.priceType || 'originale', 'Carta': s.cardName || '', 'Prezzo Originale': s.originalPrice || s.price, 'Data Aggiornamento': s.lastUpdate, 'DIFFERENZA': s.diff || 0, 'DESCRIZIONE': s.description || '' })); const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, 'PREZZI_OGGI'); const now = new Date(); const filename = `stazioni_filtrate_${now.toISOString().slice(0,10).replace(/-/g, '')}_${now.toTimeString().slice(0,8).replace(/:/g, '')}.xlsx`; XLSX.writeFile(wb, filename); showToast(`✅ Esportate ${filteredStations.length} stazioni`, 'success'); } catch (error) { console.error('Errore durante l\'esportazione:', error); showToast('❌ Errore durante l\'esportazione', 'error'); } }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const toggleIcon = document.getElementById('toggleIcon'); sidebar.classList.toggle('collapsed'); toggleIcon.className = sidebar.classList.contains('collapsed') ? 'fas fa-cog' : 'fas fa-cog'; setTimeout(() => { if (map) map.invalidateSize(); }, 300); }
 
-        // ==================== LOADING OVERLAY CON PROGRESS % ====================
         function showLoading(initialText) {
             loadingProgressValue = 0;
             const overlay = document.getElementById('loadingOverlay');
@@ -5037,7 +4939,6 @@
         }
 
         function updateLoadingProgress(percent, text) {
-            // Impedisce che il progresso diminuisca (monotono crescente)
             loadingProgressValue = Math.max(loadingProgressValue, Math.min(100, percent));
             const overlay = document.getElementById('loadingOverlay');
             const textEl = document.getElementById('loadingText');
@@ -5046,7 +4947,6 @@
             if (percentEl) percentEl.textContent = Math.round(loadingProgressValue) + '%';
             if (barEl) barEl.style.width = loadingProgressValue + '%';
             if (textEl && text) textEl.textContent = text;
-            // Fallback: se per qualche motivo l'overlay è nascosto, mostralo
             if (overlay && overlay.classList.contains('hidden') && loadingProgressValue < 100) {
                 overlay.classList.remove('hidden');
             }
@@ -5058,7 +4958,6 @@
             setTimeout(() => {
                 const overlay = document.getElementById('loadingOverlay');
                 if (overlay) overlay.classList.add('hidden');
-                // Reset dopo la chiusura per la prossima apertura
                 setTimeout(() => {
                     loadingProgressValue = 0;
                     const percentEl = document.getElementById('loadingPercent');
@@ -5076,17 +4975,10 @@
         updatePriceRange();
 
         // ============================================================
-        // NUOVO: GESTIONE CHIUSURA PAGINA - Mostra modale "Sostienimi"
-        // ============================================================
-        // Nota: i browser moderni non permettono di mostrare UI personalizzata
-        //       durante beforeunload. Questo handler mostra la modale (visibile
-        //       se l'utente decide di restare) e attiva anche il dialogo nativo
-        //       di conferma del browser. Se l'utente conferma l'uscita, la
-        //       pagina si chiuderà comunque (comportamento standard).
+        // GESTIONE CHIUSURA PAGINA - Mostra modale "Sostienimi"
         // ============================================================
         let __sostienimiShownOnUnload = false;
         window.addEventListener('beforeunload', function(e) {
-            // Mostra la modale Sostienimi prima della chiusura (best effort)
             try {
                 if (!__sostienimiShownOnUnload) {
                     const modal = document.getElementById('sostienimiModal');
@@ -5097,7 +4989,6 @@
                 }
             } catch (err) { /* ignore */ }
             
-            // Attiva il dialogo nativo di conferma del browser
             e.preventDefault();
             e.returnValue = '';
             return '';
