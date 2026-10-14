@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MK_GO_FUEL_SELF</title>
-    
+
+    <!-- ============================================================
+         MODIFICA: FAVICON + APPLE TOUCH ICON con goself.jpeg
+         ============================================================ -->
+    <link rel="icon" type="image/jpeg" href="goself.jpeg">
+    <link rel="shortcut icon" type="image/jpeg" href="goself.jpeg">
+    <link rel="apple-touch-icon" href="goself.jpeg">
+
     <!-- Preconnect per i domini dei tile per velocizzare il caricamento -->
     <link rel="preconnect" href="https://tile.openstreetmap.org">
     <link rel="preconnect" href="https://server.arcgisonline.com">
@@ -30,7 +37,21 @@
         #app { height: 100%; width: 100%; position: relative; display: flex; flex-direction: column; }
         #map { flex: 1; width: 100%; z-index: 1; }
         .app-header { background: var(--primary-blue); color: white; display: flex; align-items: center; justify-content: space-between; padding: 4px 10px; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); min-height: 44px; }
-        .logo { display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        /* ============================================================
+           MODIFICA: .logo aggiornato per ospitare l'immagine goself.jpeg
+           ============================================================ */
+        .logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+        .logo img.logo-img {
+            height: 34px;
+            width: auto;
+            border-radius: 6px;
+            background: #ffffff;
+            padding: 2px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+            display: block;
+            transition: transform 0.2s ease;
+        }
+        .logo img.logo-img:hover { transform: scale(1.05); }
         .logo i { font-size: 20px; }
         .header-right { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
         .header-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 3px; font-size: 12px; transition: background 0.3s; }
@@ -1216,7 +1237,17 @@
         <header class="app-header">
             <div style="display: flex; align-items: center; gap: 5px;">
                 <button class="menu-btn" id="menuToggleBtn" onclick="openMenuModal()"><i class="fas fa-bars"></i></button>
-                <div class="logo"><i class="fas fa-gas-pump"></i><span>MK_GO_FUEL_SELF_DEMO</span></div>
+                <!-- ============================================================
+                     MODIFICA: LOGO HEADER con immagine goself.jpeg
+                     L'immagine sostituisce l'icona Font Awesome fa-gas-pump.
+                     La scritta testuale resta per coerenza col branding.
+                     Il click sul logo continua a funzionare (7 click → sblocca box).
+                     ============================================================ -->
+                <div class="logo">
+                    <img src="goself.jpeg" alt="GOSELF Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+                    <i class="fas fa-gas-pump" style="display:none;"></i>
+                    <span>MK_GO_FUEL_SELF_DEMO</span>
+                </div>
             </div>
             <div class="header-right">
                 <!-- Pulsante Modalità Navigatore -->
