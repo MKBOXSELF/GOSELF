@@ -1184,6 +1184,31 @@
             background: linear-gradient(135deg, rgba(0, 102, 179, 0.15) 0%, rgba(255, 102, 0, 0.1) 100%);
             border-color: #444;
         }
+
+        /* ============================================================
+           NUOVO: Badge indicatore cache (opzionale, mostrato nell'header)
+           ============================================================ */
+        .cache-badge {
+            position: fixed;
+            top: 50px;
+            left: 10px;
+            background: rgba(40, 167, 69, 0.95);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+            z-index: 1500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            display: none;
+            align-items: center;
+            gap: 5px;
+            pointer-events: none;
+            animation: fadeInBadge 0.3s;
+        }
+        .cache-badge.show { display: flex; }
+        .cache-badge.warning { background: rgba(255, 102, 0, 0.95); }
+        @keyframes fadeInBadge { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -1206,6 +1231,12 @@
                 <button class="header-btn support-btn" onclick="showSostienimiModal()" title="Sostieni il progetto">
                     <i class="fas fa-heart" style="color: #ffb3c1;"></i><span>Sostieni</span>
                 </button>
+                <!-- ============================================================
+                     NUOVO: Pulsante "Ricarica dati" - forza il refresh della cache JSON
+                     ============================================================ -->
+                <button class="header-btn" id="forceRefreshDataBtn" onclick="forceRefreshData()" title="Ricarica dati dal server (ignora cache 60s)">
+                    <i class="fas fa-cloud-download-alt"></i><span>Ricarica dati</span>
+                </button>
                 <button class="header-btn" onclick="getCurrentLocation(true)"><i class="fas fa-location-dot"></i><span>Posizione</span></button>
                 <button class="header-btn" onclick="refreshMap()"><i class="fas fa-sync-alt"></i><span>Aggiorna</span></button>
                 <button class="header-btn" onclick="showLastUpdate()"><i class="fas fa-calendar-alt"></i><span id="lastUpdateText">Mai agg.</span></button>
@@ -1213,6 +1244,14 @@
                 <button class="header-btn hidden" id="boxBtn" onclick="showboxModal()"><i class="fas fa-user-shield"></i><span>box</span></button>
             </div>
         </header>
+        
+        <!-- ============================================================
+             NUOVO: Badge indicatore cache attiva
+             ============================================================ -->
+        <div id="cacheBadge" class="cache-badge">
+            <i class="fas fa-bolt"></i>
+            <span id="cacheBadgeText">Cache attiva</span>
+        </div>
         
         <!-- MODAL MENU HAMBURGER -->
         <div class="modal hidden" id="menuModal" onclick="if(event.target === this) hideMenuModal()">
@@ -2245,7 +2284,12 @@
         // ===== VARIABILI GLOBALI PER IL PROGRESSO DI CARICAMENTO =====
         let loadingProgressValue = 0;
         let loadingProgressInterval = null;
-        
+
+        // ============================================================
+        // NUOVO: COSTANTI CACHE DATI (60 secondi)
+        // ============================================================
+        const DATA_CACHE_TTL_MS = 60000; // 60 secondi di validità cache
+
         const STORAGE_KEYS = {
             FAVORITES: 'fuelMapper_favorites',
             FAVORITE_MODE: 'fuelMapper_favoriteMode',
@@ -2258,7 +2302,9 @@
             TOMTOM_API_KEY: 'fuelMapper_tomtomApiKey',
             TRAFFIC_STATE: 'fuelMapper_trafficState',
             LAYER_PREFERENCES: 'fuelMapper_layerPreferences',
-            LOCATION_PERMISSION_GRANTED: 'fuelMapper_locationPermissionGranted'
+            LOCATION_PERMISSION_GRANTED: 'fuelMapper_locationPermissionGranted',
+            // NUOVO: chiave per la cache dei dati JSON
+            DATA_CACHE: 'fuelMapper_dataCache'
         };
 
         // ==================== MAP LAYERS ====================
@@ -2395,6 +2441,7 @@
                 updateLoadingProgress(10, 'Inizializzazione mappa...');
                 initMap(); 
                 updateLoadingProgress(20, 'Connessione al server dati...');
+                // Chiamata iniziale SENZA force refresh: se la cache è valida (60s) verrà usata
                 loadDataFromGoogleSheet(); 
                 const locationPermission = localStorage.getItem(STORAGE_KEYS.LOCATION_PERMISSION_GRANTED);
                 const skipGeo = sessionStorage.getItem('skip_geolocation_on_load');
@@ -3656,10 +3703,124 @@
         }
 
         // ==================== DATA LOAD ====================
-        // ===== FUNZIONE MODIFICATA: gestisce progressivamente il caricamento =====
-        function loadDataFromGoogleSheet() {
+        // ============================================================
+        // NUOVO: FUNZIONI HELPER PER LA CACHE DATI (60 secondi)
+        // ============================================================
+
+        /**
+         * Legge la cache dei dati dal localStorage.
+         * Ritorna null se assente, corrotta o scaduta (>60s).
+         */
+        function getCachedData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.DATA_CACHE);
+                if (!raw) return null;
+                const cached = JSON.parse(raw);
+                if (!cached || typeof cached.timestamp !== 'number' || !Array.isArray(cached.stations)) {
+                    return null;
+                }
+                const age = Date.now() - cached.timestamp;
+                if (age > DATA_CACHE_TTL_MS) {
+                    console.log(`[Cache] Cache scaduta (${Math.round(age/1000)}s > ${DATA_CACHE_TTL_MS/1000}s) → verrà ricaricata dal server`);
+                    return null;
+                }
+                return cached;
+            } catch (e) {
+                console.warn('[Cache] Errore lettura cache:', e);
+                return null;
+            }
+        }
+
+        /**
+         * Salva i dati nella cache con timestamp corrente.
+         */
+        function saveDataCache(stationsToCache) {
+            try {
+                const cacheObj = {
+                    timestamp: Date.now(),
+                    stations: stationsToCache
+                };
+                localStorage.setItem(STORAGE_KEYS.DATA_CACHE, JSON.stringify(cacheObj));
+                console.log(`[Cache] Salvate ${stationsToCache.length} stazioni (valide per ${DATA_CACHE_TTL_MS/1000}s)`);
+            } catch (e) {
+                // QuotaExceededError: la cache è troppo grande per localStorage
+                console.warn('[Cache] Errore salvataggio cache (possibile quota superata):', e);
+            }
+        }
+
+        /**
+         * Elimina la cache dei dati.
+         */
+        function clearDataCache() {
+            try {
+                localStorage.removeItem(STORAGE_KEYS.DATA_CACHE);
+                console.log('[Cache] Cache eliminata');
+            } catch (e) { /* ignore */ }
+        }
+
+        /**
+         * Mostra il badge indicatore dello stato cache.
+         */
+        function showCacheBadge(text, isWarning = false) {
+            const badge = document.getElementById('cacheBadge');
+            const badgeText = document.getElementById('cacheBadgeText');
+            if (!badge || !badgeText) return;
+            badgeText.textContent = text;
+            if (isWarning) badge.classList.add('warning');
+            else badge.classList.remove('warning');
+            badge.classList.add('show');
+            clearTimeout(badge._hideTimer);
+            badge._hideTimer = setTimeout(() => {
+                badge.classList.remove('show');
+            }, 3500);
+        }
+
+        /**
+         * Applica i dati delle stazioni ricevuti (da cache o da server):
+         * aggiorna variabili globali, filtri, marker sulla mappa.
+         */
+        function processStationsData(newStations, fromCache = false) {
+            stations = newStations;
+            filteredStations = [...stations];
+            lastUpdate = new Date();
+            updateLastUpdateText();
+            updateFilterOptions();
+            updateboxStats();
+            updatePriceRange();
+            updateConfigModal();
+            displayStations();
+            applyDefaultFilters();
+            applyDefaultBrandsAndFuels();
+            setInitialDefaultSelections();
+        }
+
+        // ===== FUNZIONE MODIFICATA: gestisce cache 60s + progressivo caricamento =====
+        function loadDataFromGoogleSheet(forceRefresh = false) {
             showLoading('Connessione al server in corso...');
             updateLoadingProgress(20, 'Connessione al server in corso...');
+            
+            // ============================================================
+            // NUOVO: CONTROLLO CACHE PRIMA DELLA CHIAMATA AL SERVER
+            // ============================================================
+            if (!forceRefresh) {
+                const cached = getCachedData();
+                if (cached) {
+                    const ageSec = Math.round((Date.now() - cached.timestamp) / 1000);
+                    const remaining = Math.max(0, Math.round((DATA_CACHE_TTL_MS - (Date.now() - cached.timestamp)) / 1000));
+                    console.log(`[Cache] USO CACHE (${ageSec}s fa, ancora valida per ${remaining}s, ${cached.stations.length} stazioni)`);
+                    updateLoadingProgress(60, `⚡ Dati da cache (${ageSec}s fa, valida ${remaining}s)`);
+                    processStationsData(cached.stations, true);
+                    updateLoadingProgress(100, 'Completato!');
+                    showCacheBadge(`⚡ Cache: ${ageSec}s fa · ${cached.stations.length} staz.`, false);
+                    showToast(`⚡ Dati caricati da cache (${ageSec}s fa) - ${cached.stations.length} stazioni`, 'success');
+                    setTimeout(() => hideLoading(), 350);
+                    return;
+                }
+                console.log('[Cache] Nessuna cache valida → scarico dal server');
+            } else {
+                console.log('[Cache] Refresh forzato → ignoro la cache');
+                clearDataCache();
+            }
             
             // Animazione "soft" del progresso mentre attendiamo la risposta del server
             let softProgress = 20;
@@ -3672,7 +3833,7 @@
             }, 220);
             
             const scriptUrl = 'https://script.google.com/macros/s/AKfycbw_zwZsyeQfpOVyb53X7Hv41Fl4lKzAG2E08rLbhkE53aDBfiG2jIEo53wVQKFwdc6psA/exec';
-            fetch(scriptUrl)
+            fetch(scriptUrl, { cache: forceRefresh ? 'no-store' : 'default' })
                 .then(response => {
                     if (loadingProgressInterval) { clearInterval(loadingProgressInterval); loadingProgressInterval = null; }
                     updateLoadingProgress(50, 'Risposta ricevuta dal server...');
@@ -3728,22 +3889,15 @@
                             newStations.push(station);
                         });
                         if (newStations.length > 0) {
-                            stations = newStations;
-                            filteredStations = [...stations];
-                            lastUpdate = new Date();
-                            updateLastUpdateText();
+                            // ============================================================
+                            // NUOVO: salvo la cache con timestamp corrente
+                            // ============================================================
+                            saveDataCache(newStations);
                             updateLoadingProgress(80, 'Aggiornamento filtri e opzioni...');
-                            updateFilterOptions();
-                            updateboxStats();
-                            updatePriceRange();
-                            updateConfigModal();
-                            updateLoadingProgress(92, 'Visualizzazione sulla mappa...');
-                            displayStations();
+                            processStationsData(newStations, false);
                             updateLoadingProgress(100, 'Completato!');
-                            showToast(`✅ Dati caricati: ${stations.length} stazioni`, 'success');
-                            applyDefaultFilters();
-                            applyDefaultBrandsAndFuels();
-                            setInitialDefaultSelections();
+                            showCacheBadge(`✅ Dati freschi · ${newStations.length} staz.`, false);
+                            showToast(`✅ Dati caricati dal server: ${newStations.length} stazioni`, 'success');
                         } else {
                             throw new Error('Nessuna stazione valida trovata');
                         }
@@ -3754,6 +3908,23 @@
                 .catch(error => {
                     if (loadingProgressInterval) { clearInterval(loadingProgressInterval); loadingProgressInterval = null; }
                     console.error('Errore nel caricamento da Google Apps Script:', error);
+                    // Se c'è una cache scaduta, la uso come fallback
+                    try {
+                        const raw = localStorage.getItem(STORAGE_KEYS.DATA_CACHE);
+                        if (raw) {
+                            const cached = JSON.parse(raw);
+                            if (cached && Array.isArray(cached.stations) && cached.stations.length > 0) {
+                                console.warn('[Cache] Uso cache SCADUTA come fallback per errore rete');
+                                updateLoadingProgress(75, '⚠️ Errore rete: uso cache scaduta come fallback...');
+                                showCacheBadge('⚠️ Offline · cache scaduta usata', true);
+                                processStationsData(cached.stations, true);
+                                showToast(`⚠️ Rete non disponibile: uso cache (scaduta da ${Math.round((Date.now()-cached.timestamp)/1000)}s)`, 'error');
+                                setTimeout(() => hideLoading(), 500);
+                                return;
+                            }
+                        }
+                    } catch(e) { /* ignore */ }
+                    
                     updateLoadingProgress(70, 'Errore: carico dati di esempio...');
                     showToast('⚠️ Errore nel caricamento dei dati. Caricamento dati di esempio...', 'error');
                     setTimeout(() => loadSampleData(), 800);
@@ -3762,6 +3933,16 @@
                     // hideLoading dopo un breve delay per mostrare il 100%
                     setTimeout(() => hideLoading(), 400);
                 });
+        }
+
+        // ============================================================
+        // NUOVO: FORCE REFRESH (pulsante "Ricarica dati")
+        // ============================================================
+        function forceRefreshData() {
+            console.log('[Cache] Refresh forzato dall\'utente');
+            clearDataCache();
+            showToast('🔄 Ricarico dati dal server (cache ignorata)...', 'success');
+            loadDataFromGoogleSheet(true);
         }
 
         function loadSampleData() {
@@ -4862,6 +5043,34 @@
         function updateLastUpdateText() { if (lastUpdate) document.getElementById('lastUpdateText').textContent = lastUpdate.toLocaleDateString('it-IT'); }
         function updateStationsCount() { console.log('Stazioni visualizzate:', markers.length); }
         updatePriceRange();
+
+        // ============================================================
+        // NUOVO: GESTIONE CHIUSURA PAGINA - Mostra modale "Sostienimi"
+        // ============================================================
+        // Nota: i browser moderni non permettono di mostrare UI personalizzata
+        //       durante beforeunload. Questo handler mostra la modale (visibile
+        //       se l'utente decide di restare) e attiva anche il dialogo nativo
+        //       di conferma del browser. Se l'utente conferma l'uscita, la
+        //       pagina si chiuderà comunque (comportamento standard).
+        // ============================================================
+        let __sostienimiShownOnUnload = false;
+        window.addEventListener('beforeunload', function(e) {
+            // Mostra la modale Sostienimi prima della chiusura (best effort)
+            try {
+                if (!__sostienimiShownOnUnload) {
+                    const modal = document.getElementById('sostienimiModal');
+                    if (modal && modal.classList.contains('hidden')) {
+                        modal.classList.remove('hidden');
+                    }
+                    __sostienimiShownOnUnload = true;
+                }
+            } catch (err) { /* ignore */ }
+            
+            // Attiva il dialogo nativo di conferma del browser
+            e.preventDefault();
+            e.returnValue = '';
+            return '';
+        });
     </script>
 </body>
 </html>
