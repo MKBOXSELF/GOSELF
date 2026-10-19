@@ -373,16 +373,75 @@
         .marker-currency { font-size: 6px; opacity: 0.9; margin-bottom: -2px; }
         .marker-brand { font-size: 5px; font-weight: normal; text-transform: uppercase; opacity: 0.9; margin-top: -2px; letter-spacing: 0.2px; max-width: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .marker-content.cheapest-on-route { background-color: var(--success-green); border: 3px solid gold; transform: scale(1.1); box-shadow: 0 0 12px gold; }
-        /* MODIFICA: le icone delle 5 stazioni più convenienti sono ora ingrandite (scale 2, stessa dimensione dell'hover) */
         .marker-content.cheapest-on-screen { background-color: var(--success-green); border: 3px solid #ffd700; transform: scale(1.300:23 15/10/2026); box-shadow: 0 0 15px 2px rgba(255,215,0,0.8); animation: pulse-gold 1.2s infinite; z-index: 1000; }
         .rank-badge { position: absolute; top: -6px; right: -6px; background: gold; color: #333; font-weight: bold; font-size: 8px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 2; }
-        /* MODIFICA: rimosso "transform: scale(1)" dal 100% così il marker mantiene la scala ingrandita (scale 2) durante l'animazione */
         @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.7); } 70% { box-shadow: 0 0 0 12px rgba(255,215,0,0); } 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); } }
         .marker-content.has-message { position: relative; }
         .marker-message-icon { position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; font-size: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid white; }
         .marker-message-icon.allert { background: var(--alert-red); color: white; }
         .marker-message-icon.avviso { background: var(--warning-yellow); color: var(--dark-gray); }
         .marker-message-icon.attenzione { background: var(--accent-orange); color: white; }
+
+        /* ============================================================
+           NUOVO: STILE STAZIONI NON AGGIORNATE (>7 giorni)
+           ============================================================ */
+        .marker-content.stale-station {
+            background-color: #DC3545 !important;
+            border: 3px solid #FF0000 !important;
+            box-shadow: 0 0 15px 3px rgba(220, 53, 69, 0.8) !important;
+            animation: pulse-red 1.8s infinite;
+        }
+        .marker-content.stale-station::after {
+            content: '!';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #FF0000;
+            color: #FFFFFF;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 13px;
+            border: 2px solid #FFFFFF;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            z-index: 20;
+            line-height: 1;
+            font-family: 'Arial Black', Arial, sans-serif;
+        }
+        .marker-content.stale-station:hover { transform: scale(1.35) !important; }
+        @keyframes pulse-red {
+            0%   { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.85); }
+            70%  { box-shadow: 0 0 0 14px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        /* Badge di avviso nel popup della stazione stale */
+        .stale-warning-popup {
+            background: #ffebee;
+            color: #c62828;
+            padding: 7px 9px;
+            border-radius: 6px;
+            margin: 8px 0;
+            font-size: 11px;
+            font-weight: 700;
+            border-left: 4px solid #DC3545;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            line-height: 1.35;
+        }
+        .stale-warning-popup i { font-size: 14px; flex-shrink: 0; }
+        /* Pulsante toggle non aggiornati */
+        .layer-control button.stale-btn.stale-hidden {
+            background: #6c757d;
+            opacity: 0.75;
+        }
+        .layer-control button.stale-btn.stale-hidden:hover { background: #5a6268; }
+        /* ============================================================ */
+
         .config-section { margin-bottom: 16px; padding: 10px; background: var(--light-gray); border-radius: 6px; }
         .config-title { font-weight: 600; color: var(--primary-blue); margin-bottom: 10px; font-size: 13px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--medium-gray); padding-bottom: 6px; }
         .config-subtitle { font-weight: 600; color: var(--dark-gray); margin: 10px 0 6px 0; font-size: 11px; }
@@ -1278,6 +1337,7 @@
                     <p><strong>Dati Certificati:</strong> Utilizza i dati ufficiali del Ministero delle Imprese e del Made in Italy (MIMIT/ex MiSE) tramite il portale Osservaprezzi Carburanti.</p>
                     <p><strong>Aggiornamento Continuo:</strong> Prezzi aggiornati su base oraria per assicurare la massima precisione, subordinatamente alla disponibilità dei dati ministeriali. (Le quotazioni possono variare in qualsiasi momento e non costituiscono garanzia di prezzo finale)</p>
                     <p><strong>Monitoraggio Traffico:</strong> Visualizzazione dei flussi di traffico in tempo reale grazie a integrazioni esterne.</p>
+                    <p><strong>Alert Dati Obsoleti:</strong> Le stazioni con dati non aggiornati da più di 7 giorni sono evidenziate in rosso con un punto esclamativo. Un pulsante dedicato nella barra layer permette di mostrare o nascondere queste stazioni dalla mappa.</p>
                     
                     <h4><i class="fas fa-building"></i> Soluzioni Enterprise</h4>
                     <p>La piattaforma è altamente implementabile e può essere configurata su misura per le aziende del settore. Le funzionalità avanzate includono:</p>
@@ -1564,6 +1624,10 @@
             <button id="darkBtn" onclick="setMapLayer('dark')"><i class="fas fa-moon"></i> Dark</button>
             <button id="topoBtn" onclick="setMapLayer('topo')"><i class="fas fa-mountain"></i> Topo</button>
             <button id="googleTrafficBtn" onclick="toggleTrafficLayer()"><i class="fas fa-car"></i></button>
+            <!-- NUOVO: pulsante toggle stazioni non aggiornate -->
+            <button id="staleStationsBtn" class="stale-btn active" onclick="toggleStaleStations()" title="Mostra/Nascondi stazioni non aggiornate da più di 7 giorni">
+                <i class="fas fa-exclamation-triangle" id="staleIcon"></i> Non agg. (<span id="staleCount">0</span>)
+            </button>
         </div>
         <div id="searchLocationContainer" style="position: absolute; top: 60px; right: 20px; z-index: 2001; width: 300px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
             <div style="display: flex; align-items: center; padding: 8px;">
@@ -1917,18 +1981,12 @@
             menuWasOpen = false;
         }
 
-        // ============================================================
-        // MODIFICA 1a: nuova funzione che chiude il MENU e apre SOSTIENIMI
-        // ============================================================
         function closeMenuAndShowSostienimi() {
             document.getElementById('menuModal').classList.add('hidden');
             menuWasOpen = false;
             document.getElementById('sostienimiModal').classList.remove('hidden');
         }
 
-        // ============================================================
-        // MODIFICA 1b: nuova funzione che chiude il README e apre SOSTIENIMI
-        // ============================================================
         function closeReadmeAndShowSostienimi() {
             document.getElementById('readmeModal').classList.add('hidden');
             menuWasOpen = false;
@@ -2277,6 +2335,14 @@
         let loadingProgressValue = 0;
         let loadingProgressInterval = null;
 
+        // ============================================================
+        // NUOVO: STATO STAZIONI NON AGGIORNATE (>7 giorni)
+        // ============================================================
+        const STALE_THRESHOLD_DAYS = 7;
+        let showStaleStations = true;
+        let staleStationsCount = 0;
+        // ============================================================
+
         const DATA_CACHE_TTL_MS = 60000;
 
         const STORAGE_KEYS = {
@@ -2292,7 +2358,8 @@
             TRAFFIC_STATE: 'fuelMapper_trafficState',
             LAYER_PREFERENCES: 'fuelMapper_layerPreferences',
             LOCATION_PERMISSION_GRANTED: 'fuelMapper_locationPermissionGranted',
-            DATA_CACHE: 'fuelMapper_dataCache'
+            DATA_CACHE: 'fuelMapper_dataCache',
+            SHOW_STALE: 'fuelMapper_showStale'
         };
 
         const mapLayers = {
@@ -2331,6 +2398,87 @@
                 crossOrigin: true
             })
         };
+
+        // ============================================================
+        // NUOVE FUNZIONI: stazioni non aggiornate (>7 giorni)
+        // ============================================================
+        function parseStationDate(dateStr) {
+            if (!dateStr) return null;
+            if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+            const s = String(dateStr).trim();
+            // ISO: YYYY-MM-DD
+            let d = new Date(s);
+            if (!isNaN(d.getTime())) return d;
+            // Italiano: DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
+            const parts = s.split(/[\/\-\.]/);
+            if (parts.length === 3) {
+                let [a, b, c] = parts.map(Number);
+                if (isNaN(a) || isNaN(b) || isNaN(c)) return null;
+                // Se il terzo è a 4 cifre → DD/MM/YYYY
+                if (c > 31) return new Date(c, b - 1, a);
+                // Se il primo è a 4 cifre → YYYY/MM/DD
+                if (a > 31) return new Date(a, b - 1, c);
+            }
+            return null;
+        }
+
+        function isStationStale(station) {
+            if (!station) return false;
+            const d = parseStationDate(station.lastUpdate);
+            if (!d) return false;
+            const diffMs = Date.now() - d.getTime();
+            const diffDays = diffMs / (1000 * 60 * 60 * 24);
+            return diffDays > STALE_THRESHOLD_DAYS;
+        }
+
+        function getStaleDaysLabel(station) {
+            const d = parseStationDate(station && station.lastUpdate);
+            if (!d) return '';
+            const diffDays = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays <= STALE_THRESHOLD_DAYS) return '';
+            return diffDays + ' giorni fa';
+        }
+
+        function updateStaleStationsCount() {
+            staleStationsCount = stations.filter(s => isStationStale(s)).length;
+            const el = document.getElementById('staleCount');
+            if (el) el.textContent = staleStationsCount;
+            const btn = document.getElementById('staleStationsBtn');
+            if (btn && staleStationsCount === 0) {
+                btn.title = 'Nessuna stazione non aggiornata al momento';
+            }
+        }
+
+        function toggleStaleStations() {
+            showStaleStations = !showStaleStations;
+            const btn = document.getElementById('staleStationsBtn');
+            const icon = document.getElementById('staleIcon');
+            if (showStaleStations) {
+                if (btn) { btn.classList.add('active'); btn.classList.remove('stale-hidden'); }
+                if (icon) icon.className = 'fas fa-exclamation-triangle';
+                showToast(`⚠️ Stazioni non aggiornate VISIBILI sulla mappa (${staleStationsCount})`, 'success');
+            } else {
+                if (btn) { btn.classList.remove('active'); btn.classList.add('stale-hidden'); }
+                if (icon) icon.className = 'fas fa-eye-slash';
+                showToast('✓ Stazioni non aggiornate NASCOSTE dalla mappa', 'success');
+            }
+            try { localStorage.setItem(STORAGE_KEYS.SHOW_STALE, showStaleStations ? 'true' : 'false'); } catch(e) {}
+            applyFilters();
+        }
+
+        function restoreStaleToggleState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEYS.SHOW_STALE);
+                if (saved === 'false') {
+                    showStaleStations = false;
+                    const btn = document.getElementById('staleStationsBtn');
+                    const icon = document.getElementById('staleIcon');
+                    if (btn) { btn.classList.remove('active'); btn.classList.add('stale-hidden'); }
+                    if (icon) icon.className = 'fas fa-eye-slash';
+                }
+            } catch(e) {}
+        }
+        // ============================================================
 
         function loadLayerPreferences() {
             const saved = localStorage.getItem(STORAGE_KEYS.LAYER_PREFERENCES);
@@ -2398,6 +2546,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadSavedConfig();
             loadLayerPreferences();
+            restoreStaleToggleState();
             if (customCardConfigs.length === 0) {
                 customCardConfigs.push({ 
                     id: 'card_cisterna', 
@@ -2808,7 +2957,8 @@
                     stationMessages: stationMessages,
                     plattsValues: plattsValues,
                     customCardConfigs: customCardConfigs,
-                    tomtomApiKey: tomtomApiKey
+                    tomtomApiKey: tomtomApiKey,
+                    showStaleStations: showStaleStations
                 };
                 const jsonStr = JSON.stringify(exportData, null, 2);
                 const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -2876,6 +3026,13 @@
                             const tomtomInput = document.getElementById('tomtomApiKeyInput');
                             if (tomtomInput) tomtomInput.value = tomtomApiKey;
                             updateTomTomLayerKey();
+                        }
+                        if (config.showStaleStations !== undefined) {
+                            showStaleStations = !!config.showStaleStations;
+                            const btn = document.getElementById('staleStationsBtn');
+                            const icon = document.getElementById('staleIcon');
+                            if (btn) { if (showStaleStations) { btn.classList.add('active'); btn.classList.remove('stale-hidden'); } else { btn.classList.remove('active'); btn.classList.add('stale-hidden'); } }
+                            if (icon) icon.className = showStaleStations ? 'fas fa-exclamation-triangle' : 'fas fa-eye-slash';
                         }
                         updateCustomCardsConfigUI();
                         updateBrandPriceControls();
@@ -3009,6 +3166,7 @@
                 localStorage.setItem(STORAGE_KEYS.PLATTS, JSON.stringify(plattsValues));
                 localStorage.setItem(STORAGE_KEYS.CUSTOM_CARDS, JSON.stringify(customCardConfigs));
                 localStorage.setItem(STORAGE_KEYS.TOMTOM_API_KEY, tomtomApiKey);
+                localStorage.setItem(STORAGE_KEYS.SHOW_STALE, showStaleStations ? 'true' : 'false');
                 showToast('✅ Configurazione salvata!', 'success');
                 updateBrandPriceControls();
             } catch (e) { console.error('Errore nel salvataggio:', e); showToast('❌ Errore nel salvataggio', 'error'); }
@@ -3026,13 +3184,19 @@
             if (confirm('Resettare tutta la configurazione?')) {
                 favorites.clear(); favoriteModeActive = false; stationMessages = {}; brandPrices = {}; plattsValues = { today: 1.500, yesterday: 1.495 }; customCardConfigs = [];
                 tomtomApiKey = '';
+                showStaleStations = true;
                 localStorage.removeItem(STORAGE_KEYS.FAVORITES); localStorage.removeItem(STORAGE_KEYS.FAVORITE_MODE); localStorage.removeItem(STORAGE_KEYS.MESSAGES);
                 localStorage.removeItem(STORAGE_KEYS.BRAND_PRICES); localStorage.removeItem(STORAGE_KEYS.PLATTS); localStorage.removeItem(STORAGE_KEYS.CUSTOM_CARDS);
                 localStorage.removeItem(STORAGE_KEYS.DEFAULT_FILTERS); localStorage.removeItem(STORAGE_KEYS.DEFAULT_BRANDS_FUELS); localStorage.removeItem(STORAGE_KEYS.TOMTOM_API_KEY);
+                localStorage.removeItem(STORAGE_KEYS.SHOW_STALE);
                 document.getElementById('plattsToday').value = 1.500; document.getElementById('plattsYesterday').value = 1.495;
                 const tomtomInput = document.getElementById('tomtomApiKeyInput');
                 if (tomtomInput) tomtomInput.value = '';
                 updateTomTomLayerKey();
+                const btn = document.getElementById('staleStationsBtn');
+                const icon = document.getElementById('staleIcon');
+                if (btn) { btn.classList.add('active'); btn.classList.remove('stale-hidden'); }
+                if (icon) icon.className = 'fas fa-exclamation-triangle';
                 updateCustomCardsConfigUI(); updateConfigModal(); applyFilters();
                 showToast('✅ Configurazione resettata', 'success');
             }
@@ -3180,7 +3344,7 @@
                             const price = parseFloat(row['Prezzo'] || row['price'] || 0);
                             if (lat && lng && price > 0) { stations.push({ brand, name, address, city, province, lat, lng, fuelType, price, lastUpdate: new Date().toISOString().split('T')[0], diff: 0, description: 'Importata da file' }); added++; }
                         });
-                        if (added > 0) { updateFilterOptions(); displayStations(); showToast(`✅ Importate ${added} nuove stazioni`, 'success'); }
+                        if (added > 0) { updateFilterOptions(); updateStaleStationsCount(); displayStations(); showToast(`✅ Importate ${added} nuove stazioni`, 'success'); }
                     } catch (err) { console.error('Errore importazione:', err); showToast('❌ Errore importazione file', 'error'); }
                 };
                 reader.readAsArrayBuffer(file);
@@ -3243,7 +3407,7 @@
             const price = parseFloat(document.getElementById('newStationPrice').value), description = document.getElementById('newStationDescription').value.trim();
             if (!lat || !lng || !name || !price || price <= 0) { alert('Inserisci almeno nome, prezzo e seleziona posizione'); return; }
             const newStation = { brand: brand || 'Personalizzata', name, address: address || 'Indirizzo non specificato', city: city || 'Città non specificata', province: province || '--', lat, lng, fuelType, price, lastUpdate: new Date().toISOString().split('T')[0], diff: 0, description: description || 'Stazione creata manualmente' };
-            stations.push(newStation); updateFilterOptions(); displayStations();
+            stations.push(newStation); updateFilterOptions(); updateStaleStationsCount(); displayStations();
             document.getElementById('newStationLat').value = ''; document.getElementById('newStationLng').value = ''; document.getElementById('newStationName').value = '';
             document.getElementById('newStationAddress').value = ''; document.getElementById('newStationCity').value = ''; document.getElementById('newStationProvince').value = '';
             document.getElementById('newStationPrice').value = ''; document.getElementById('newStationDescription').value = '';
@@ -3741,6 +3905,7 @@
             lastUpdate = new Date();
             updateLastUpdateText();
             updateFilterOptions();
+            updateStaleStationsCount();
             updateboxStats();
             updatePriceRange();
             updateConfigModal();
@@ -3779,7 +3944,7 @@
             loadingProgressInterval = setInterval(() => {
                 if (softProgress < 45) {
                     softProgress += 1;
-                    updateLoadingProgress(softProgress, 'Download prezzi in corso.... attesa risposta da "https://carburanti.mise.gov.it/"  ');
+                    updateLoadingProgress(softProgress, 'Download prezzi in corso.... "https://carburanti.mise.gov.it/" ');
                 }
             }, 220);
             
@@ -3910,7 +4075,7 @@
             stations.push({ brand: "Q8", name: "Q8 CORSO TASSONI", address: "CORSO TASSONI 2", city: "TORINO", province: "TO", lat: 45.07688, lng: 7.65646, fuelType: "Benzina", price: 1.689, lastUpdate: "2026-03-02", diff: -5, description: "Benzina" });
             stations.push({ brand: "Eni", name: "Eni Station", address: "Via Roma 1", city: "Roma", province: "RM", lat: 41.9028, lng: 12.4964, fuelType: "GPL", price: 0.789, lastUpdate: "2026-03-02", diff: 0, description: "GPL" });
             stations.push({ brand: "Tamoil", name: "Tamoil", address: "Via Nazionale", city: "Firenze", province: "FI", lat: 43.7696, lng: 11.2558, fuelType: "Metano", price: 1.299, lastUpdate: "2026-03-02", diff: 0, description: "Metano" });
-            lastUpdate = new Date(); updateLastUpdateText(); updateFilterOptions(); updateboxStats(); updateConfigModal(); filteredStations = [...stations];
+            lastUpdate = new Date(); updateLastUpdateText(); updateFilterOptions(); updateStaleStationsCount(); updateboxStats(); updateConfigModal(); filteredStations = [...stations];
             updateLoadingProgress(95, 'Visualizzazione dati di esempio...');
             setTimeout(() => { 
                 updatePriceRange(); 
@@ -4325,7 +4490,18 @@
         function applyFilters() {
             const minPrice = currentMinPrice;
             const maxPrice = currentMaxPrice;
-            const baseFiltered = stations.filter(s => { if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true; if (selectedBrands.size === 0) return false; if (!selectedBrands.has(s.brand)) return false; if (selectedFuels.size === 0) return false; if (!selectedFuels.has(s.fuelType)) return false; if (s.price < minPrice || s.price > maxPrice) return false; if (zoneActive && !isPointInDrawnZone(s.lat, s.lng)) return false; return true; });
+            // NUOVO: filtro stazioni non aggiornate
+            const baseFiltered = stations.filter(s => {
+                if (!showStaleStations && isStationStale(s)) return false;
+                if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true;
+                if (selectedBrands.size === 0) return false;
+                if (!selectedBrands.has(s.brand)) return false;
+                if (selectedFuels.size === 0) return false;
+                if (!selectedFuels.has(s.fuelType)) return false;
+                if (s.price < minPrice || s.price > maxPrice) return false;
+                if (zoneActive && !isPointInDrawnZone(s.lat, s.lng)) return false;
+                return true;
+            });
             filteredStations = [];
             baseFiltered.forEach(station => {
                 const brandCardPrices = brandPrices[station.brand] || {};
@@ -4488,6 +4664,7 @@
                 return;
             }
             const tempFiltered = stations.filter(s => {
+                if (!showStaleStations && isStationStale(s)) return false;
                 if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true;
                 if (selectedBrands.size > 0 && !selectedBrands.has(s.brand)) return false;
                 if (selectedFuels.size > 0 && !selectedFuels.has(s.fuelType)) return false;
@@ -4601,8 +4778,10 @@
                 const hasMessages = stationMessages[stationKey] && stationMessages[stationKey].length > 0;
                 const isFavorite = favorites.has(stationKey);
                 const isCheapestOnRoute = hasActiveRoute && cheapestStationOnRoute && s.lat === cheapestStationOnRoute.lat && s.lng === cheapestStationOnRoute.lng;
-                let markerColor = getMarkerColor(s.price);
-                let markerHtml = `<div class="marker-content ${isCheapestOnRoute ? 'cheapest-on-route' : ''} ${hasMessages ? 'has-message' : ''} ${isFavorite ? 'favorite' : ''} ${isHighlighted ? 'cheapest-on-screen' : ''}" style="background-color: ${markerColor};">`;
+                // NUOVO: calcolo stale (data > 7 giorni)
+                const isStale = isStationStale(s);
+                let markerColor = isStale ? '#DC3545' : getMarkerColor(s.price);
+                let markerHtml = `<div class="marker-content ${isStale ? 'stale-station' : ''} ${isCheapestOnRoute ? 'cheapest-on-route' : ''} ${hasMessages ? 'has-message' : ''} ${isFavorite ? 'favorite' : ''} ${isHighlighted ? 'cheapest-on-screen' : ''}" style="background-color: ${markerColor};">`;
                 if (isFavorite) markerHtml += `<div style="position: absolute; top: -10px; left: -5px; color: gold; font-size: 12px;">★</div>`;
                 if (rankNumber !== null) {
                     markerHtml += `<div class="rank-badge">${rankNumber}</div>`;
@@ -4701,22 +4880,26 @@
                 messagesHtml += '</div>';
             }
             
+            // NUOVO: banner di avviso nel popup per stazioni stale
+            let staleWarningHtml = '';
+            if (isStationStale(station)) {
+                const daysLabel = getStaleDaysLabel(station);
+                staleWarningHtml = `<div class="stale-warning-popup">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Dati non aggiornati da più di 7 giorni (ultimo agg.: ${station.lastUpdate}${daysLabel ? ' · ' + daysLabel : ''})</span>
+                </div>`;
+            }
+            
             const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}&travelmode=driving`;
             const wazeUrl = `https://www.waze.com/ul?ll=${station.lat},${station.lng}&navigate=yes`;
             const shareCoordsUrl = `https://www.google.com/maps?q=${station.lat},${station.lng}&z=16`;
             const coordinatesText = `${station.lat.toFixed(6)}, ${station.lng.toFixed(6)}`;
             
-            let messagesText = '';
-            if (stationMessages[stationKey] && stationMessages[stationKey].length > 0) {
-                messagesText = stationMessages[stationKey].map(msg => `${msg.type.toUpperCase()}: ${msg.text}`).join(' | ');
-            }
-            const cheapestCardName = globalMinCardName;
-            const cheapestCardPrice = globalMinPrice;
-            
             const popupContent = `
                 <div class="station-popup">
                     <h3>${station.name} ${favorites.has(stationKey) ? '⭐' : ''}</h3>
                     <div class="popup-row"><span>${station.brand} - ${globalMinFuel}</span><span class="popup-price">€${globalMinPrice.toFixed(3)}</span></div>
+                    ${staleWarningHtml}
                     <div style="margin: 8px 0; max-height: 300px; overflow-y: auto;">${pricesHtml}</div>
                     ${messagesHtml}
                     <div class="popup-info"><i class="fas fa-map-marker-alt"></i><span>${station.address}, ${station.city} (${station.province})</span></div>
@@ -4902,7 +5085,17 @@
             document.getElementById('stationsCount').textContent = nearbyStations.length;
             const minPrice = currentMinPrice;
             const maxPrice = currentMaxPrice;
-            const baseFiltered = nearbyStations.filter(s => { if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true; if (selectedBrands.size === 0) return false; if (!selectedBrands.has(s.brand)) return false; if (selectedFuels.size === 0) return false; if (!selectedFuels.has(s.fuelType)) return false; if (s.price < minPrice || s.price > maxPrice) return false; if (zoneActive && drawnPolygon && !isPointInDrawnZone(s.lat, s.lng)) return false; return true; });
+            const baseFiltered = nearbyStations.filter(s => {
+                if (!showStaleStations && isStationStale(s)) return false;
+                if (favoriteModeActive && favorites.has(`${s.lat},${s.lng}`)) return true;
+                if (selectedBrands.size === 0) return false;
+                if (!selectedBrands.has(s.brand)) return false;
+                if (selectedFuels.size === 0) return false;
+                if (!selectedFuels.has(s.fuelType)) return false;
+                if (s.price < minPrice || s.price > maxPrice) return false;
+                if (zoneActive && drawnPolygon && !isPointInDrawnZone(s.lat, s.lng)) return false;
+                return true;
+            });
             filteredStations = [];
             baseFiltered.forEach(station => { const brandCardPrices = brandPrices[station.brand] || {}; filteredStations.push({ ...station, priceType: 'originale', cardName: 'Prezzo pompa' }); Object.keys(brandCardPrices).forEach(card => { const cardData = brandCardPrices[card]; if (cardData.active && cardData.value !== '' && !isNaN(cardData.value) && parseFloat(cardData.value) > 0) { let cardPrice = cardData.type === 'sconto' ? station.price - parseFloat(cardData.value) : parseFloat(cardData.value); let cardName = card; if (card === 'ALTRO' && cardData.customName) cardName = cardData.customName; if (cardPrice >= minPrice && cardPrice <= maxPrice) filteredStations.push({ ...station, price: cardPrice, priceType: 'carta', cardName: cardName, originalPrice: station.price, cardValue: parseFloat(cardData.value), cardType: cardData.type }); } }); });
             displayStations();
@@ -4922,8 +5115,8 @@
         function showboxDashboard() { updateboxStats(); document.getElementById('boxDashboardModal').classList.remove('hidden'); }
         function hideboxDashboard() { document.getElementById('boxDashboardModal').classList.add('hidden'); }
         function updateboxStats() { document.getElementById('totalStations').textContent = stations.length; const brands = new Set(stations.map(s => s.brand)); document.getElementById('totalBrands').textContent = brands.size; const fuelTypes = new Set(stations.map(s => s.fuelType)); document.getElementById('totalFuelTypes').textContent = fuelTypes.size; const avgPrice = stations.reduce((sum, s) => sum + s.price, 0) / stations.length; document.getElementById('avgPrice').textContent = '€' + avgPrice.toFixed(3); }
-        function importExcelFile(input) { const file = input.files[0]; if (!file) return; showLoading('Importazione Excel...'); updateLoadingProgress(20, 'Lettura file...'); const reader = new FileReader(); reader.onload = function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const sheetName = workbook.SheetNames.find(name => name.includes('PREZZI_OGGI')); if (sheetName) { updateLoadingProgress(60, 'Elaborazione dati...'); const sheet = workbook.Sheets[sheetName]; const jsonData = XLSX.utils.sheet_to_json(sheet); const newStations = jsonData.map(row => ({ brand: row['Brand'] || '', name: row['Nome Impianto'] || '', address: row['Indirizzo'] || '', city: row['Comune'] || '', province: row['Provincia'] || '', lat: parseFloat(row['Latitudine']) || 0, lng: parseFloat(row['Longitudine']) || 0, fuelType: row['Carburante'] || '', price: parseFloat(row['Prezzo']) || 0, lastUpdate: row['Data Aggiornamento'] || new Date().toISOString().split('T')[0], diff: parseInt(row['DIFFERENZA']) || 0, description: row['DESCRIZIONE'] || '' })).filter(s => s.lat && s.lng && s.price > 0); if (newStations.length > 0) { stations = newStations; filteredStations = [...stations]; lastUpdate = new Date(); updateLoadingProgress(90, 'Visualizzazione mappa...'); updateLastUpdateText(); updateFilterOptions(); updateboxStats(); updatePriceRange(); updateConfigModal(); displayStations(); updateLoadingProgress(100, 'Completato!'); showToast('File importato con successo! ' + stations.length + ' stazioni caricate', 'success'); } else showToast('Nessuna stazione valida trovata nel file', 'error'); } else showToast('Foglio PREZZI_OGGI non trovato', 'error'); } catch (error) { console.error('Errore importazione:', error); showToast('Errore durante l\'importazione del file', 'error'); } setTimeout(() => hideLoading(), 400); input.value = ''; }; reader.readAsArrayBuffer(file); }
-        function exportFilteredToExcel() { if (filteredStations.length === 0) { showToast('Nessuna stazione da esportare', 'error'); return; } try { const exportData = filteredStations.map(s => ({ 'Brand': s.brand, 'Nome Impianto': s.name, 'Indirizzo': s.address, 'Comune': s.city, 'Provincia': s.province, 'Latitudine': s.lat, 'Longitudine': s.lng, 'Carburante': s.fuelType, 'Prezzo': s.price, 'Tipo Prezzo': s.priceType || 'originale', 'Carta': s.cardName || '', 'Prezzo Originale': s.originalPrice || s.price, 'Data Aggiornamento': s.lastUpdate, 'DIFFERENZA': s.diff || 0, 'DESCRIZIONE': s.description || '' })); const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, 'PREZZI_OGGI'); const now = new Date(); const filename = `stazioni_filtrate_${now.toISOString().slice(0,10).replace(/-/g, '')}_${now.toTimeString().slice(0,8).replace(/:/g, '')}.xlsx`; XLSX.writeFile(wb, filename); showToast(`✅ Esportate ${filteredStations.length} stazioni`, 'success'); } catch (error) { console.error('Errore durante l\'esportazione:', error); showToast('❌ Errore durante l\'esportazione', 'error'); } }
+        function importExcelFile(input) { const file = input.files[0]; if (!file) return; showLoading('Importazione Excel...'); updateLoadingProgress(20, 'Lettura file...'); const reader = new FileReader(); reader.onload = function(e) { try { const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const sheetName = workbook.SheetNames.find(name => name.includes('PREZZI_OGGI')); if (sheetName) { updateLoadingProgress(60, 'Elaborazione dati...'); const sheet = workbook.Sheets[sheetName]; const jsonData = XLSX.utils.sheet_to_json(sheet); const newStations = jsonData.map(row => ({ brand: row['Brand'] || '', name: row['Nome Impianto'] || '', address: row['Indirizzo'] || '', city: row['Comune'] || '', province: row['Provincia'] || '', lat: parseFloat(row['Latitudine']) || 0, lng: parseFloat(row['Longitudine']) || 0, fuelType: row['Carburante'] || '', price: parseFloat(row['Prezzo']) || 0, lastUpdate: row['Data Aggiornamento'] || new Date().toISOString().split('T')[0], diff: parseInt(row['DIFFERENZA']) || 0, description: row['DESCRIZIONE'] || '' })).filter(s => s.lat && s.lng && s.price > 0); if (newStations.length > 0) { stations = newStations; filteredStations = [...stations]; lastUpdate = new Date(); updateLoadingProgress(90, 'Visualizzazione mappa...'); updateLastUpdateText(); updateFilterOptions(); updateStaleStationsCount(); updateboxStats(); updatePriceRange(); updateConfigModal(); displayStations(); updateLoadingProgress(100, 'Completato!'); showToast('File importato con successo! ' + stations.length + ' stazioni caricate', 'success'); } else showToast('Nessuna stazione valida trovata nel file', 'error'); } else showToast('Foglio PREZZI_OGGI non trovato', 'error'); } catch (error) { console.error('Errore importazione:', error); showToast('Errore durante l\'importazione del file', 'error'); } setTimeout(() => hideLoading(), 400); input.value = ''; }; reader.readAsArrayBuffer(file); }
+        function exportFilteredToExcel() { if (filteredStations.length === 0) { showToast('Nessuna stazione da esportare', 'error'); return; } try { const exportData = filteredStations.map(s => ({ 'Brand': s.brand, 'Nome Impianto': s.name, 'Indirizzo': s.address, 'Comune': s.city, 'Provincia': s.province, 'Latitudine': s.lat, 'Longitudine': s.lng, 'Carburante': s.fuelType, 'Prezzo': s.price, 'Tipo Prezzo': s.priceType || 'originale', 'Carta': s.cardName || '', 'Prezzo Originale': s.originalPrice || s.price, 'Data Aggiornamento': s.lastUpdate, 'DIFFERENZA': s.diff || 0, 'DESCRIZIONE': s.description || '', 'Non Aggiornato': isStationStale(s) ? 'SI' : 'NO' })); const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(exportData); XLSX.utils.book_append_sheet(wb, ws, 'PREZZI_OGGI'); const now = new Date(); const filename = `stazioni_filtrate_${now.toISOString().slice(0,10).replace(/-/g, '')}_${now.toTimeString().slice(0,8).replace(/:/g, '')}.xlsx`; XLSX.writeFile(wb, filename); showToast(`✅ Esportate ${filteredStations.length} stazioni`, 'success'); } catch (error) { console.error('Errore durante l\'esportazione:', error); showToast('❌ Errore durante l\'esportazione', 'error'); } }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const toggleIcon = document.getElementById('toggleIcon'); sidebar.classList.toggle('collapsed'); toggleIcon.className = sidebar.classList.contains('collapsed') ? 'fas fa-cog' : 'fas fa-cog'; setTimeout(() => { if (map) map.invalidateSize(); }, 300); }
 
         function showLoading(initialText) {
