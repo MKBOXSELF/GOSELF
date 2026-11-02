@@ -2402,25 +2402,61 @@
         // ============================================================
         // NUOVE FUNZIONI: stazioni non aggiornate (>7 giorni)
         // ============================================================
-        function parseStationDate(dateStr) {
-            if (!dateStr) return null;
-            if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
-            const s = String(dateStr).trim();
-            // ISO: YYYY-MM-DD
-            let d = new Date(s);
-            if (!isNaN(d.getTime())) return d;
-            // Italiano: DD/MM/YYYY o DD-MM-YYYY o DD.MM.YYYY
-            const parts = s.split(/[\/\-\.]/);
-            if (parts.length === 3) {
-                let [a, b, c] = parts.map(Number);
-                if (isNaN(a) || isNaN(b) || isNaN(c)) return null;
-                // Se il terzo è a 4 cifre → DD/MM/YYYY
-                if (c > 31) return new Date(c, b - 1, a);
-                // Se il primo è a 4 cifre → YYYY/MM/DD
-                if (a > 31) return new Date(a, b - 1, c);
+        // ============================================================
+// FIX: parsing date italiane (DD/MM/YYYY) prima del parser nativo
+// ============================================================
+function parseStationDate(dateStr) {
+    if (!dateStr) return null;
+    if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+    const s = String(dateStr).trim();
+    if (!s) return null;
+
+    // 1) FORMATO ITALIANO: DD/MM/YYYY (anche con orario HH:MM[:SS])
+    //    Es: "02/11/2026 06:13:10" → 2 novembre 2026 (NON 11 febbraio!)
+    //    ATTENZIONE: il parser nativo JS "new Date('02/11/2026')" legge MM/DD/YYYY,
+    //    quindi va gestito manualmente per evitare falsi positivi di 7+ giorni.
+    const italianMatch = s.match(
+        /^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})(?:[\sT](\d{1,2}):(\d{2})(?::(\d{2}))?)?/
+    );
+    if (italianMatch) {
+        const day     = parseInt(italianMatch[1], 10);
+        const month   = parseInt(italianMatch[2], 10) - 1;
+        const year    = parseInt(italianMatch[3], 10);
+        const hours   = italianMatch[4] ? parseInt(italianMatch[4], 10) : 0;
+        const minutes = italianMatch[5] ? parseInt(italianMatch[5], 10) : 0;
+        const seconds = italianMatch[6] ? parseInt(italianMatch[6], 10) : 0;
+        if (day >= 1 && day <= 31 && month >= 0 && month <= 11 &&
+            hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59 &&
+            seconds >= 0 && seconds <= 59) {
+            const d = new Date(year, month, day, hours, minutes, seconds);
+            // Verifica anti-rollover (es. 31/02 → 03/03)
+            if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
+                return d;
             }
-            return null;
         }
+    }
+
+    // 2) FORMATO ISO: YYYY-MM-DD (anche con orario)
+    //    Es: "2026-11-02" oppure "2026-11-02 06:13:10"
+    const isoMatch = s.match(
+        /^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})(?:[\sT](\d{1,2}):(\d{2})(?::(\d{2}))?)?/
+    );
+    if (isoMatch) {
+        const year    = parseInt(isoMatch[1], 10);
+        const month   = parseInt(isoMatch[2], 10) - 1;
+        const day     = parseInt(isoMatch[3], 10);
+        const hours   = isoMatch[4] ? parseInt(isoMatch[4], 10) : 0;
+        const minutes = isoMatch[5] ? parseInt(isoMatch[5], 10) : 0;
+        const seconds = isoMatch[6] ? parseInt(isoMatch[6], 10) : 0;
+        const d = new Date(year, month, day, hours, minutes, seconds);
+        if (!isNaN(d.getTime())) return d;
+    }
+
+    // 3) Fallback: parser nativo (solo se ha T/Z di timezone o formati esotici)
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return d;
+    return null;
+}
 
         function isStationStale(station) {
             if (!station) return false;
